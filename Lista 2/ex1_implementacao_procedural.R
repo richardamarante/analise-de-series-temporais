@@ -4,7 +4,8 @@
 # Dependências: R base.
 
 # (a) ENTRADAS
-# Os parâmetros de simulação e a semente são definidos no próprio script, sem entrada externa.
+# São n = 200, max_lag = 20, sigma2 = 1 e phi = 0.7, definidos no início do script junto com
+# a semente 123, sem nenhuma entrada externa.
 
 # (b) SAÍDAS
 # Produz as três séries, suas médias e FACs, as comparações com acf() e os gráficos,
