@@ -7,7 +7,7 @@
 # (a) Entradas: n = 120 (10 anos, s = 12), sigma = 5 e tendência de grau 2, com K = 2
 # harmônicos, q = 5, semente 42, método Fourier ou dummies e previsão de 12 períodos.
 
-# (b) Saídas: série e componentes, coeficientes OLS, resíduos, média móvel, testes,
+# (b) Saídas: série e componentes, coeficientes OLS, resíduos, média móvel,
 # métricas, previsões e cinco gráficos.
 
 # (c) Estruturas: vetores para os dados e resultados, matrizes n x p para os regressores,
@@ -16,7 +16,7 @@
 # (d) Funções: não define funções próprias, pois usa loops e operações do R base.
 
 # (e) Fluxo: simula Xt = tendência + sazonalidade + eps, calcula a média móvel e ajusta
-# beta_hat = (X'X)^(-1) X'y, antes do diagnóstico, dos testes, da previsão e dos gráficos.
+# beta_hat = (X'X)^(-1) X'y, antes do diagnóstico, da previsão e dos gráficos.
 
 # Em X'X, i e j percorrem as colunas e k soma os produtos nas n linhas, com custo O(n p²);
 # em X'y, i percorre as colunas e k soma X_full[k,i] * Xt[k], com custo O(n p).
@@ -390,56 +390,6 @@ cat("R²:", round(r2, 4), "\n")
 cat("Coeficientes estimados:\n")
 
 print(round(beta_hat, 4))
-
-# Testa H0: beta_j = 0 com t_j = beta_hat_j / ep_j, em que
-# ep_j² = s2 [(X'X)^-1]_jj.
-p <- numero_colunas
-
-s2 <- ss_res / (n - p)
-
-XtX_inversa <- solve(XtX)
-
-for(j in 1:p){
-
-  erro_padrao <- sqrt(XtX_inversa[j,j] * s2)
-
-  estatistica_t <- beta_hat[j] / erro_padrao
-
-  valor_p <- 2 * (1 - pt(abs(estatistica_t), n - p))
-
-  cat("Coeficiente", j, "- estatística t:", round(estatistica_t, 4),
-      "- valor-p:", round(valor_p, 4), "\n")
-}
-
-# Aplica Box-Pierce com 12 defasagens, usando Q = n * soma de rho_hat(h)².
-max_lag_box <- 12
-
-gama0 <- 0
-
-for(i in 1:n){
-  gama0 <- gama0 + (residuos[i] - media_residuos)^2
-}
-
-gama0 <- gama0 / n
-
-Q <- 0
-
-for(h in 1:max_lag_box){
-
-  gama_h <- 0
-
-  for(i in 1:(n - h)){
-    gama_h <- gama_h + (residuos[i] - media_residuos) * (residuos[i + h] - media_residuos)
-  }
-
-  Q <- Q + (gama_h / n / gama0)^2
-}
-
-Q <- n * Q
-
-cat("Box-Pierce - Q:", round(Q, 4), "\n")
-
-cat("Box-Pierce - valor-p:", round(1 - pchisq(Q, max_lag_box), 4), "\n")
 
 ############################################################
 # 9. PREVISÃO

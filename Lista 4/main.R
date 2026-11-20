@@ -109,20 +109,6 @@ sazonalidade_mensal_real <- calcular_sazonalidade_mensal(t, sazonalidade_real, s
 sazonalidade_mensal_fourier <- calcular_sazonalidade_mensal(t, modelo$sazonalidade, s)
 sazonalidade_mensal_dummies <- calcular_sazonalidade_mensal(t, modelo_dummies$sazonalidade, s)
 
-imprimir_titulo_console("TESTES DE HIPÓTESES – FOURIER")
-
-teste_t <- teste_t_coeficientes(modelo)
-
-for(j in 1:nrow(teste_t)){
-  cat("Coeficiente", j, "- estatística t:", round(teste_t$estatistica_t[j], 4),
-      "- valor-p:", round(teste_t$valor_p[j], 4), "\n")
-}
-
-teste_box <- teste_box_pierce(modelo$residuos, parametros$max_lag_box)
-
-cat("Box-Pierce - Q:", round(teste_box$Q, 4), "\n")
-cat("Box-Pierce - valor-p:", round(teste_box$valor_p, 4), "\n")
-
 imprimir_titulo_console("VALIDAÇÃO – OLS MANUAL E lm()")
 
 ajuste_lm <- lm(Xt ~ modelo$X_full - 1)

@@ -1,6 +1,6 @@
 ############################################################
 # processamento.R
-# Calcula média móvel, OLS, diagnóstico, testes, sazonalidade mensal e previsão.
+# Calcula média móvel, OLS, diagnóstico, sazonalidade mensal e previsão.
 # Dependências: nenhuma, pois recebe as matrizes de regressores prontas.
 ############################################################
 
@@ -355,95 +355,4 @@ calcular_sazonalidade_mensal <- function(t, sazonalidade, periodo){
   }
 
   return(sazonalidade_mensal)
-}
-
-# Testa H0: beta_j = 0 com t_j = beta_hat_j / ep_j, em que
-# ep_j² = s2 [(X'X)^-1]_jj e s2 = soma e² / (n - p), usando a distribuição t
-# com n - p graus de liberdade para calcular os valores-p bilaterais.
-# Entrada: modelo é a lista produzida por ajustar_modelo.
-# Saída: data.frame com beta_hat, erro_padrao, estatistica_t e valor_p.
-# Pré-condição: X'X deve ser invertível e n > p.
-teste_t_coeficientes <- function(modelo){
-
-  X <- modelo$X_full
-
-  residuos <- modelo$residuos
-
-  n <- nrow(X)
-
-  p <- ncol(X)
-
-  ss_res <- 0
-
-  for(i in 1:n){
-    ss_res <- ss_res + residuos[i]^2
-  }
-
-  s2 <- ss_res / (n - p)
-
-  XtX_inversa <- solve(calcular_XtX(X))
-
-  erro_padrao <- numeric(p)
-
-  estatistica_t <- numeric(p)
-
-  valor_p <- numeric(p)
-
-  for(j in 1:p){
-
-    erro_padrao[j] <- sqrt(XtX_inversa[j,j] * s2)
-
-    estatistica_t[j] <- modelo$beta_hat[j] / erro_padrao[j]
-
-    valor_p[j] <- 2 * (1 - pt(abs(estatistica_t[j]), n - p))
-  }
-
-  return(data.frame(beta_hat = modelo$beta_hat,
-                    erro_padrao = erro_padrao,
-                    estatistica_t = estatistica_t,
-                    valor_p = valor_p))
-}
-
-# Aplica Box-Pierce com Q = n * soma de rho_hat(h)², de h = 1 até max_lag,
-# usando rho_hat(h) = gama_hat(h) / gama_hat(0) e a distribuição qui-quadrado
-# com max_lag graus de liberdade para calcular o valor-p.
-# Entrada: residuos é um vetor de tamanho n e max_lag é um inteiro.
-# Saída: Lista com Q e valor_p.
-# Pré-condição: 1 <= max_lag < n.
-teste_box_pierce <- function(residuos, max_lag){
-
-  n <- length(residuos)
-
-  media <- calcular_media_amostral(residuos)
-
-  gama0 <- 0
-
-  for(i in 1:n){
-    gama0 <- gama0 + (residuos[i] - media)^2
-  }
-
-  gama0 <- gama0 / n
-
-  Q <- 0
-
-  for(h in 1:max_lag){
-
-    gama_h <- 0
-
-    for(i in 1:(n - h)){
-      gama_h <- gama_h + (residuos[i] - media) * (residuos[i + h] - media)
-    }
-
-    gama_h <- gama_h / n
-
-    rho_h <- gama_h / gama0
-
-    Q <- Q + rho_h^2
-  }
-
-  Q <- n * Q
-
-  valor_p <- 1 - pchisq(Q, max_lag)
-
-  return(list(Q = Q, valor_p = valor_p))
 }

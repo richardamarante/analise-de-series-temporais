@@ -9,7 +9,6 @@
   "beta_h": [-1, 0.5],
   "K": 2,
   "q": 5,
-  "max_lag_box": 12,
   "n_futuro": 12,
   "proporcao_treino": 0.6,
   "proporcao_validacao": 0.2,

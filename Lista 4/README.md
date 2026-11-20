@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Simular uma série com tendência quadrática e sazonalidade, estimar os coeficientes por OLS com equações normais, analisar os resíduos, testar hipóteses e prever 12 períodos. A sazonalidade é ajustada por Fourier e por dummies, com gráficos feitos em ggplot2.
+Simular uma série com tendência quadrática e sazonalidade, estimar os coeficientes por OLS com equações normais, analisar os resíduos e prever 12 períodos. A sazonalidade é ajustada por Fourier e por dummies, com gráficos feitos em ggplot2.
 
 $$X_t=\beta_0+\beta_1t+\beta_2t^2+\sum_{k=1}^{K}\left[\alpha_k\cos(2\pi kt/s)+b_k\operatorname{sen}(2\pi kt/s)\right]+\varepsilon_t,\quad\varepsilon_t\sim N(0,\sigma^2).$$
 
@@ -10,11 +10,11 @@ $$X_t=\beta_0+\beta_1t+\beta_2t^2+\sum_{k=1}^{K}\left[\alpha_k\cos(2\pi kt/s)+b_
 
 | Arquivo | Exercício | Conteúdo |
 |---|---|---|
-| `ex1_implementacao_procedural.R` | 1 | simulação, OLS, testes, previsão e gráficos em R base |
+| `ex1_implementacao_procedural.R` | 1 | simulação, OLS, previsão e gráficos em R base |
 | `parametros.json` | 2 | parâmetros da simulação, dos gráficos e da eficiência |
 | `scripts/config.R` | 2 | `ler_parametros()`, semente e vetores de tempo e coeficientes |
 | `scripts/dados.R` | 2 | matrizes de tendência, Fourier e dummies; simulação |
-| `scripts/processamento.R` | 2 | média móvel, OLS, diagnósticos, testes, avaliação e previsão |
+| `scripts/processamento.R` | 2 | média móvel, OLS, diagnósticos, avaliação e previsão |
 | `scripts/visualizacao.R` | 2 e 4 | gráficos, tema e exportação por `salvar_grafico()` |
 | `main.R` | 3 | execução das etapas e geração de 12 gráficos |
 | `ex4_eficiencia.R` | 4 | validação com `lm()`, tempos e gráfico de eficiência |
@@ -35,23 +35,23 @@ source("ex4_eficiencia.R")
 
 O Exercício 1 roda separadamente com `source("ex1_implementacao_procedural.R")`. O `main.R` mostra os resultados e salva 12 PNGs; `ex4_eficiencia.R` salva mais um.
 
-Em `parametros.json`: `seed = 42`, `n_anos = 10`, `s = 12`, `sigma = 5`, `grau_tendencia = 2`, `beta_tendencia = (2, 0.05, 0.001)`, `alpha = (2, 1)`, `beta_h = (-1, 0.5)`, `K = 2`, `q = 5`, `max_lag_box = 12`, `n_futuro = 12`, `n_eficiencia = 200000` e `repeticoes_eficiencia = 10`. São 120 observações, variância do ruído 25 e média móvel centrada de 11 pontos. O arquivo também define `n_grafico_eficiencia`, `proporcao_treino` e `proporcao_validacao`.
+Em `parametros.json`: `seed = 42`, `n_anos = 10`, `s = 12`, `sigma = 5`, `grau_tendencia = 2`, `beta_tendencia = (2, 0.05, 0.001)`, `alpha = (2, 1)`, `beta_h = (-1, 0.5)`, `K = 2`, `q = 5`, `n_futuro = 12`, `n_eficiencia = 200000` e `repeticoes_eficiencia = 10`. São 120 observações, variância do ruído 25 e média móvel centrada de 11 pontos. O arquivo também define `n_grafico_eficiencia`, `proporcao_treino` e `proporcao_validacao`.
 
 ## Validação dos resultados
 
 A média da série simulada foi 10.0334. O ajuste de Fourier usa três colunas de tendência e quatro sazonais; dummies usa três de tendência e 11 indicadoras (mês 1 como referência). OLS estima 7 e 14 parâmetros, respectivamente. `ajustar_ols()` resolve `solve(XtX, Xty)`, com produtos calculados por `calcular_XtX()` e `calcular_Xty()`.
 
-| Coeficiente de Fourier | Verdadeiro | Estimado | t | Valor-p |
-|---|---:|---:|---:|---:|
-| Intercepto | 2 | 2.8646 | 1.9533 | 0.0533 |
-| Tendência linear | 0.05 | 0.0236 | 0.4227 | 0.6733 |
-| Tendência quadrática | 0.001 | 0.0012 | 2.6396 | 0.0095 |
-| Cosseno 1 | 2 | 1.3523 | 1.9913 | 0.0489 |
-| Seno 1 | -1 | -1.6327 | -2.3978 | 0.0181 |
-| Cosseno 2 | 1 | 0.7060 | 1.0397 | 0.3007 |
-| Seno 2 | 0.5 | 0.0716 | 0.1054 | 0.9162 |
+| Coeficiente de Fourier | Verdadeiro | Estimado |
+| --- | ---: | ---: |
+| Intercepto | 2 | 2.8646 |
+| Tendência linear | 0.05 | 0.0236 |
+| Tendência quadrática | 0.001 | 0.0012 |
+| Cosseno 1 | 2 | 1.3523 |
+| Seno 1 | -1 | -1.6327 |
+| Cosseno 2 | 1 | 0.7060 |
+| Seno 2 | 0.5 | 0.0716 |
 
-`teste_t_coeficientes()` testa $H_0:\beta_j=0$. A 5%, rejeita a hipótese nula para os coeficientes 3, 4 e 5. No teste de Box-Pierce dos resíduos de Fourier, com 12 defasagens, $Q=8.3199$ e valor-p 0.7597: não se rejeita a ausência de autocorrelação. A FAC usa bandas de $\pm1.96/\sqrt{n}$.
+A FAC usa bandas de $\pm1.96/\sqrt{n}$.
 
 | Medida | Fourier | Dummies |
 |---|---:|---:|
