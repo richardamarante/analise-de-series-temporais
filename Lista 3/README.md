@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Simular uma série temporal com tendência polinomial, dada por Xₜ = β₀ + β₁t + β₂t² + εₜ, e calcular a média móvel centrada, a média amostral, as autocovariâncias e a função de autocorrelação empírica (FAC). Os resultados são comparados com a função `acf()` do R e apresentados em gráficos feitos com ggplot2.
+Simular uma série temporal com tendência polinomial, dada por Xₜ = β₀ + β₁t + β₂t² + εₜ, e calcular a média móvel centrada, a média amostral, as autocovariâncias e a função de autocorrelação empírica (FAC). A função `acf()` do R serve de referência para conferir os resultados, que também são apresentados em gráficos feitos com ggplot2.
 
 ## Arquivos
 
@@ -30,7 +30,7 @@ source("main.R")
 source("ex4_eficiencia.R")
 ```
 
-O `main.R` lê as configurações de `parametros.json`, executa a simulação e imprime as estatísticas no console. Também gera cinco gráficos em `graficos/serie_tendencia/`, mostrando a série simulada, a média móvel, a tendência verdadeira, a FAC e sua comparação com `acf()`, além de um gráfico integrado. O `ex4_eficiencia.R` faz a comparação dos tempos de execução e salva o resultado em `graficos/eficiencia/`.
+O `main.R` lê as configurações de `parametros.json`, executa a simulação e imprime as estatísticas no console. Também gera cinco gráficos em `graficos/serie_tendencia/` para apresentar a série simulada, a média móvel, a tendência verdadeira, a FAC e sua comparação com `acf()`, além de um gráfico integrado. O `ex4_eficiencia.R` faz a comparação dos tempos de execução e salva o resultado em `graficos/eficiencia/`.
 
 A modelagem do Exercício 3 está em `modelagem.md`.
 
@@ -40,11 +40,11 @@ A simulação utiliza `seed = 123`, `n = 90` e `sigma = 15`, com tendência verd
 
 Com `q = 3`, a média móvel centrada utiliza uma janela de 7 pontos e produz 84 valores, de t = 4 até t = 87. A FAC foi calculada até a defasagem 20 e apresentou valor 1 na origem, 0.7285 na defasagem 1 e 0.2910 na defasagem 20, permanecendo positiva e com queda geral, como esperado para uma série com tendência não estacionária.
 
-Para conferir a implementação, a FAC manual foi comparada com `acf(Xt, lag.max = 20, plot = FALSE)`. A maior diferença absoluta encontrada foi 0 e o teste com `all.equal()` retornou `TRUE`, confirmando que os dois cálculos produziram os mesmos valores.
+A implementação da FAC manual foi conferida com `acf(Xt, lag.max = 20, plot = FALSE)`. A maior diferença absoluta encontrada foi 0 e o teste com `all.equal()` retornou `TRUE`, o que confirma que os dois cálculos produziram os mesmos valores.
 
 ## Análise de eficiência (Exercício 4.3)
 
-O `ex4_eficiencia.R` compara as implementações com loops `for` e as versões vetorizadas em quatro operações. Na vetorização, a matriz de regressão é construída com `cbind()`, a simulação utiliza operações matriciais, a média móvel é calculada por somas acumuladas e as autocovariâncias usam produtos de vetores, evitando percorrer os elementos individualmente em R. Os tempos foram medidos para n = 1000, 25000 e 50000, com 10 repetições por operação.
+O `ex4_eficiencia.R` compara as implementações com loops `for` e as versões vetorizadas em quatro operações. Na vetorização, a matriz de regressão é construída com `cbind()`, enquanto a simulação usa operações matriciais, a média móvel é calculada por somas acumuladas e as autocovariâncias por produtos de vetores, sem percorrer os elementos individualmente em R. Os tempos foram medidos para n = 1000, 25000 e 50000, com 10 repetições por operação.
 
 Os resultados para n = 50000 foram os seguintes.
 

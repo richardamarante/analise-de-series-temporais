@@ -30,13 +30,13 @@ source("main.R")
 source("ex4_eficiencia.R")
 ```
 
-O `main.R` lê `parametros.json` e executa as etapas de configuração, simulação, cálculo, análise e exibição, usando a semente 123, `n = 200`, `max_lag = 20`, `sigma2 = 1` e `phi = 0.7`. Os 11 gráficos gerados são exibidos e salvos em `graficos/`, nas pastas `ruido_branco/`, `passeio_aleatorio/`, `ar1/` e `eficiencia/`. O Exercício 1 também pode ser executado separadamente com `source("ex1_implementacao_procedural.R")`.
+O `main.R` lê `parametros.json` e executa as etapas de configuração, simulação, cálculo, análise e exibição, usando a semente 123, `n = 200`, `max_lag = 20`, `sigma2 = 1` e `phi = 0.7`. Os 11 gráficos gerados são exibidos e salvos em `graficos/`, nas pastas `ruido_branco/`, `passeio_aleatorio/`, `ar1/` e `eficiencia/`. Para executar o Exercício 1 separadamente, basta usar `source("ex1_implementacao_procedural.R")`.
 
 ## Validação dos resultados
 
-Com a semente 123 e a simulação na ordem ruído branco, passeio aleatório e AR(1), as médias empíricas foram -0.0086, 7.2628 e 0.0895, respectivamente. Para verificar os cálculos manuais, as FACs dos três processos foram comparadas com `acf()`, e a maior diferença encontrada foi zero em todos os casos.
+As simulações foram feitas com a semente 123, na ordem ruído branco, passeio aleatório e AR(1), e produziram médias empíricas de -0.0086, 7.2628 e 0.0895, respectivamente. A comparação das FACs calculadas manualmente com `acf()` serviu para conferir os resultados dos três processos, com diferença máxima igual a zero em todos os casos.
 
-No AR(1), com φ = 0.7, a FAC teórica é dada por ρ(h) = φ^h. A tabela mostra a comparação nas duas primeiras defasagens, em que os valores empíricos ficaram abaixo dos teóricos.
+Para o AR(1), a FAC teórica é ρ(h) = φ^h, com φ = 0.7. A tabela mostra a comparação nas duas primeiras defasagens, em que os valores empíricos ficaram abaixo dos teóricos.
 
 | Defasagem | FAC empírica | FAC teórica |
 |---|---:|---:|
@@ -62,4 +62,4 @@ O vetor `eps` é gerado fora da medição para que seu tempo de geração não e
 | Autocovariâncias | 2.8 × 10⁻¹⁰ | 1.37 × 10⁻¹⁴ | TRUE |
 | FAC empírica | 2.23 × 10⁻¹⁴ | | TRUE |
 
-As versões vetorizadas foram mais rápidas e produziram resultados equivalentes aos cálculos com loops, com diferenças apenas de arredondamento. A redução no tempo foi maior no passeio aleatório, embora também tenha sido significativa nas autocovariâncias. O gráfico de eficiência compara os tempos para `n = 1000`, `10000`, `50000` e `100000`, mostrando como a diferença entre as implementações aumenta com o tamanho da série.
+As versões vetorizadas foram mais rápidas e produziram resultados equivalentes aos cálculos com loops, com diferenças apenas de arredondamento. A redução no tempo foi maior no passeio aleatório, embora também tenha sido significativa nas autocovariâncias. O gráfico de eficiência compara os tempos para `n = 1000`, `10000`, `50000` e `100000` e mostra como a diferença entre as implementações aumenta com o tamanho da série.

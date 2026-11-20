@@ -4,7 +4,7 @@
 
 Simular uma série temporal com tendência quadrática e sazonalidade, estimar os coeficientes por mínimos quadrados ordinários (OLS) com as equações normais, analisar os resíduos e prever 12 períodos. A sazonalidade é representada por Fourier e por dummies mensais, com os resultados apresentados no console e em gráficos feitos com ggplot2.
 
-O modelo é Xₜ = β₀ + β₁t + β₂t² + Σₖ [αₖ·cos(2πkt/s) + bₖ·sen(2πkt/s)] + εₜ, com εₜ ~ N(0, σ²) e k = 1, …, K.
+A série segue o modelo Xₜ = β₀ + β₁t + β₂t² + Σₖ [αₖ·cos(2πkt/s) + bₖ·sen(2πkt/s)] + εₜ, com εₜ ~ N(0, σ²) e k = 1, …, K.
 
 ## Arquivos
 
@@ -33,7 +33,7 @@ source("main.R")
 source("ex4_eficiencia.R")
 ```
 
-O Exercício 1 pode ser executado separadamente com `source("ex1_implementacao_procedural.R")`. O `main.R` apresenta os resultados no console e salva 12 gráficos, enquanto o script de eficiência gera mais um. Os parâmetros ficam em `parametros.json`, que define a semente 42, dez anos de observações mensais, desvio do ruído igual a 5 e dois harmônicos de Fourier, além das configurações de previsão, divisão temporal e eficiência.
+O Exercício 1 também pode ser executado separadamente com `source("ex1_implementacao_procedural.R")`. Ao executar `main.R`, os resultados aparecem no console e são salvos 12 gráficos, além de mais um gerado pelo script de eficiência. Os parâmetros ficam em `parametros.json`, que define a semente 42, dez anos de observações mensais, desvio do ruído igual a 5 e dois harmônicos de Fourier, além das configurações de previsão, divisão temporal e eficiência.
 
 ## Fourier x dummies
 
@@ -41,7 +41,7 @@ No Exercício 1.3, a sazonalidade de Fourier é representada por 2K colunas de s
 
 ## Validação dos resultados
 
-Com a semente 42, foram simuladas 120 observações, com média 10.0334 e variância do ruído igual a 25. A média móvel centrada utiliza 11 pontos, enquanto o OLS resolve as equações normais por `solve(XtX, Xty)`, com os produtos matriciais calculados por loops. Os coeficientes estimados de Fourier, na ordem intercepto, tendência linear, tendência quadrática, cosseno 1, seno 1, cosseno 2 e seno 2, foram 2.8646, 0.0236, 0.0012, 1.3523, -1.6327, 0.7060 e 0.0716, diante dos valores verdadeiros 2, 0.05, 0.001, 2, -1, 1 e 0.5.
+Com a semente 42, foram simuladas 120 observações, com média 10.0334 e variância do ruído igual a 25. A média móvel centrada considera 11 pontos, e os produtos matriciais do OLS são calculados por loops antes da resolução das equações normais com `solve(XtX, Xty)`. Os coeficientes estimados de Fourier, na ordem intercepto, tendência linear, tendência quadrática, cosseno 1, seno 1, cosseno 2 e seno 2, foram 2.8646, 0.0236, 0.0012, 1.3523, -1.6327, 0.7060 e 0.0716, diante dos valores verdadeiros 2, 0.05, 0.001, 2, -1, 1 e 0.5.
 
 | Medida | Fourier | Dummies |
 |---|---:|---:|
@@ -53,7 +53,7 @@ Com a semente 42, foram simuladas 120 observações, com média 10.0334 e variâ
 
 As dummies tiveram melhor ajuste dentro da amostra, com R² de 0.6247 contra 0.5979, o que também reflete o maior número de parâmetros. Fourier apresentou menor RMSE na previsão do sinal verdadeiro sem ruído, passando de 0.8775 contra 1.5812 das dummies no horizonte de t = 121 a 132. No primeiro período, as previsões foram 23.7829 e 24.3790, diante do valor verdadeiro 24.8561, enquanto no último foram 28.6178 e 30.6464, diante de 29.0240.
 
-A FAC dos resíduos foi analisada com bandas de ±1.96/√n. Os coeficientes calculados manualmente também foram comparados com `lm()`, com maior diferença arredondada a quatro casas igual a zero, e `all.equal()` retornou `TRUE` tanto para os coeficientes quanto para os valores ajustados.
+Para a FAC dos resíduos, foram usadas bandas de ±1.96/√n. Na comparação dos coeficientes calculados manualmente com `lm()`, a maior diferença arredondada a quatro casas foi zero, e `all.equal()` retornou `TRUE` tanto para os coeficientes quanto para os valores ajustados.
 
 ## Treino, validação e teste
 
@@ -86,4 +86,4 @@ As cinco comparações dos coeficientes entre loops, operações vetorizadas e `
 
 ## Gráficos e ggplot2
 
-O ggplot2 foi utilizado no Exercício 4.2 para manter a mesma apresentação entre os gráficos, facilitar a comparação das séries e organizar a decomposição aditiva em quatro painéis com `facet_wrap()`. Os 13 PNGs foram distribuídos entre `graficos/decomposicao/`, `graficos/previsao/`, `graficos/residuos/` e `graficos/eficiencia/`, mostrando os componentes estimados e verdadeiros, a média móvel, os ajustes, as previsões, os diagnósticos dos resíduos e os tempos de execução.
+O ggplot2 foi utilizado no Exercício 4.2 para manter a mesma apresentação entre os gráficos, facilitar a comparação das séries e organizar a decomposição aditiva em quatro painéis com `facet_wrap()`. Os 13 PNGs foram distribuídos entre `graficos/decomposicao/`, `graficos/previsao/`, `graficos/residuos/` e `graficos/eficiencia/` e mostram os componentes estimados e verdadeiros, a média móvel, os ajustes, as previsões, os diagnósticos dos resíduos e os tempos de execução.
