@@ -1,92 +1,70 @@
 ############################################################
 # ex1_implementacao_procedural.R
-# exercício 1 da lista de 28/08/2026: decomposição clássica de uma série
-# com tendência polinomial e sazonalidade, estimada por OLS, em um único
-# script procedural (variáveis, vetores, matrizes e loops, sem funções).
-# roda sozinho: Rscript ex1_implementacao_procedural.R
-#
-# (a) entradas e parâmetros globais (valor inicial e origem)
-#   n_anos = 10: anos simulados, fixado no início do script
-#   s = 12: período sazonal (meses por ano), fixado no início
-#   n = n_anos * s = 120: tamanho da série, calculado a partir de n_anos e s
-#   sigma = 5: desvio padrão do ruído branco, fixado no início
-#   q = 5: raio da média móvel centrada, fixado no início
-#   K = 2: número de harmônicos de Fourier, fixado no início
-#   grau_tendencia = 2: grau do polinômio da tendência, fixado no início
-#   beta_tendencia = c(2, 0.05, 0.001): coeficientes verdadeiros de 1, t e t^2
-#   alpha = c(2, 1) e beta_h = c(-1, 0.5): coeficientes verdadeiros dos
-#     cossenos e dos senos; beta_sazonal os intercala (cos1, sen1, cos2, sen2)
-#   t = 1:n: vetor de tempo, calculado a partir de n
-#   metodo_sazonal = "fourier": método do ajuste, "fourier" ou "dummies"
-#   periodo = 12: período usado nas matrizes sazonais, igual a s
-#   semente = 42: fixada com set.seed
-#   t_futuro = (n+1):(n+12): instantes da previsão, calculados a partir de n
-# ---
-# (b) saídas
-#   matrizes de modelo: X_tendencia, X_fourier, X_dummies, X_sazonal, X_full
-#   série simulada: eps e Xt; componentes verdadeiros: tendencia_real e
-#     sazonalidade_real
-#   estimados: beta_hat, y_hat, tendencia_hat, sazonalidade_hat, residuos
-#   diagnóstico: media_residuos, variancia_residuos, rmse, r2
-#   testes: estatística t e valor-p de cada coeficiente, Q de Box-Pierce e valor-p
-#   média móvel: tendencia_media_movel
-#   previsões: previsoes (12 períodos) e o rmse contra o sinal verdadeiro
-#   gráficos: observada e ajustada, tendência, sazonalidade, resíduos, média
-#     móvel contra tendência estimada
-# ---
-# (c) estruturas de dados
-#   vetores: t, eps, Xt, beta_*, y_hat, residuos, previsoes, medias
-#   matrizes: X_tendencia (n x 3), X_sazonal (n x 2K), X_full (n x p),
-#     XtX (p x p), com p = número de colunas de X_full
-#   vetor Xty (tamanho p): produto interno de cada coluna de X com Xt
-# ---
-# (d) funções
-#   criar_matriz_tendencia, criar_matriz_fourier, criar_matriz_dummies: seções 2 e 3
-#   simular_ruido_branco, simular_serie: seção 4
-#   calcular_media_movel: seção 5
-#   multiplicar_matriz_vetor, calcular_XtX, calcular_Xty, ajustar_ols: seções 6 e 7
-#   ajustar_modelo: seções 6 e 7
-#   diagnostico: seção 8 (os testes t e de Box-Pierce vêm logo depois)
-#   prever: seção 9
-#   plot_*: seção 10 (gráficos do R base)
-# ---
-# (e) fluxo de execução
-#   parâmetros -> matrizes de tendência e sazonal -> ruído e série
-#   -> média móvel -> X_full -> X'X e X'y -> solve -> ajustados e componentes
-#   -> resíduos -> diagnóstico e testes -> matrizes futuras -> previsões
-#   -> validação das previsões contra o sinal verdadeiro -> gráficos
-# ---
-# loops de matriz e solve() (seção 6)
-#   a transposta não é construída. X'[i,k] é X[k,i], então ler a coluna i de X
-#   faz o papel da linha i de X'. o elemento (i,j) de X'X é o produto interno
-#   da coluna i com a coluna j: três loops, i e j escolhem a posição no
-#   resultado (p x p) e k soma X[k,i] * X[k,j] sobre as n linhas. custo n p^2.
-#   o vetor X'y usa dois loops: para cada coluna i, soma X[k,i] * y[k] sobre
-#   as n linhas. custo n p.
-#   as equações normais são (X'X) beta = X'y, um sistema linear de p equações.
-#   solve(XtX, Xty) o resolve por decomposição LU, sem formar a inversa de
-#   X'X, o que é mais rápido e mais estável. precisa de X'X invertível, ou
-#   seja, de colunas de X linearmente independentes.
-# ---
-# fourier x dummies
-#   modelo: X_t = tendência(t) + sazonalidade(t) + eps_t, com período s.
-#   fourier: sazonalidade(t) = soma_{k=1}^{K} [alpha_k cos(2 pi k t / s)
-#     + beta_k sen(2 pi k t / s)]. cada harmônico k é uma onda de período s/k
-#     e ocupa 2 colunas (cos e sen), no total 2K (4 aqui). curva suave, com
-#     poucos parâmetros, e vale para qualquer s. precisa de K < s/2: com
-#     K = s/2 o seno do último harmônico é zero em t inteiro e X'X fica
-#     singular. montar a matriz custa n K chamadas de cos e de sen.
-#   dummies: sazonalidade(t) = soma_{m=2}^{s} gamma_m D_m(t), com D_m(t) = 1
-#     quando o mês ((t-1) %% s) + 1 vale m e 0 caso contrário. o mês 1 é a
-#     referência e fica no intercepto: com as s colunas a soma delas seria a
-#     coluna de 1 e X'X seria singular. usa s - 1 colunas (11 aqui). cada mês
-#     tem um nível livre, sem forma suave, e montar a matriz custa um resto de
-#     divisão e uma atribuição por linha.
-#   custo da estimação: X'X custa n p^2 multiplicações e o solve custa da
-#     ordem de p^3. com tendência de grau 2, p = 3 + 4 = 7 (fourier) ou
-#     p = 3 + 11 = 14 (dummies): X'X custa cerca de 4 vezes mais e o solve
-#     cerca de 8 vezes mais com dummies. com K = s/2 sem a coluna nula, os
-#     dois métodos geram o mesmo espaço de colunas e o mesmo ajuste.
+# Simula e decompõe uma série com tendência polinomial, sazonalidade e OLS.
+# Implementação procedural com variáveis, vetores, matrizes e loops, sem funções.
+# Dependências: R base.
+# Execução: Rscript ex1_implementacao_procedural.R
+
+# (a) Entradas e parâmetros globais
+# Anos: n_anos = 10, período s = 12, tamanho n = n_anos * s = 120.
+# Ruído: sigma = 5. Média móvel: q = 5.
+# Tendência: grau_tendencia = 2, beta_tendencia = c(2, 0.05, 0.001).
+# Fourier: K = 2, alpha = c(2, 1), beta_h = c(-1, 0.5).
+# Coeficientes sazonais: beta_sazonal intercala alpha e beta_h (cos1, sen1, cos2, sen2).
+# Método: metodo_sazonal = "fourier" ou "dummies", periodo = 12.
+# Tempo: t = 1:n, t_futuro = (n+1):(n+12), semente = 42 com set.seed().
+
+# (b) Saídas
+# Matrizes: X_tendencia, X_fourier, X_dummies, X_sazonal, X_full.
+# Simulação: eps, Xt, tendencia_real, sazonalidade_real.
+# Ajuste: beta_hat, y_hat, tendencia_hat, sazonalidade_hat, residuos.
+# Diagnóstico: media_residuos, variancia_residuos, rmse, r2.
+# Testes: estatística t, valor-p dos coeficientes, Q de Box-Pierce e valor-p.
+# Média móvel: tendencia_media_movel.
+# Previsão: previsoes para 12 períodos e RMSE contra o sinal verdadeiro.
+# Gráficos: série ajustada, tendência, sazonalidade, resíduos e média móvel contra OLS.
+
+# (c) Estruturas de dados
+# Vetores: t, eps, Xt, beta_*, y_hat, residuos, previsoes, medias.
+# Matrizes: X_tendencia (n x 3), X_sazonal (n x 2K), X_full (n x p), XtX (p x p).
+# Produto Xty: vetor p, com o produto interno de cada coluna de X_full com Xt.
+
+# (d) Funções
+# Não define funções. As operações de construção, simulação, OLS e previsão usam loops.
+# Gráficos feitos com funções do R base.
+
+# (e) Fluxo de execução
+# Parâmetros, matrizes de tendência e sazonalidade, ruído e série simulada.
+# Média móvel, X_full, X'X, X'y, solve(), valores ajustados e componentes estimados.
+# Resíduos, diagnóstico, testes t e de Box-Pierce, matrizes futuras e previsões.
+# Validação das previsões contra o sinal verdadeiro e gráficos.
+
+# Loops de matriz e solve()
+# X'X usa três loops: i e j escolhem a posição da matriz p x p.
+# O loop k soma X_full[k,i] * X_full[k,j] nas n linhas.
+# A transposta não é construída: a coluna i de X_full é a linha i de X'.
+# Cada elemento de X'X é o produto interno de duas colunas. Custo: n p².
+# X'y usa dois loops: i escolhe a coluna e k soma X_full[k,i] * Xt[k]. Custo: n p.
+# As equações normais são (X'X) beta = X'y, um sistema de p equações.
+# solve(XtX, Xty) resolve o sistema por decomposição LU, sem calcular a inversa.
+# É mais rápido e estável que formar a inversa e multiplicar por Xty.
+# Pré-condição: X'X invertível, com colunas de X_full linearmente independentes.
+
+# Fourier x dummies
+# Modelo: X_t = tendência(t) + sazonalidade(t) + eps_t, com período s.
+# Fourier: soma de alpha_k cos(2 pi k t / s) + beta_k sen(2 pi k t / s), k = 1, ..., K.
+# Cada harmônico tem período s/k e ocupa duas colunas, totalizando 2K (4 aqui).
+# Produz um padrão suave com poucos parâmetros. Custo de construção: n K cossenos e senos.
+# Exige K < s/2: com K = s/2, a coluna do último seno é zero para t inteiro.
+# Dummies: soma de gamma_m D_m(t), m = 2, ..., s.
+# O mês é ((t-1) %% s) + 1. D_m(t) vale 1 no mês m e 0 nos outros.
+# O mês 1 fica no intercepto, evitando dependência linear entre as colunas.
+# Usa s - 1 colunas (11 aqui), com um efeito livre para cada mês.
+# Cada linha exige um resto de divisão e uma atribuição.
+# Com grau 2, p = 7 em Fourier e p = 14 em dummies.
+# X'X custa n p² e solve() custa da ordem de p³.
+# Com dummies, X'X custa cerca de 4 vezes mais e solve() cerca de 8 vezes mais.
+# Fourier com K = s/2, retirando o seno nulo, gera o mesmo espaço das dummies e o mesmo ajuste.
 ############################################################
 
 rm(list = ls())
@@ -169,10 +147,10 @@ for(i in 1:n){
   }
 }
 
-# X_sazonal é a matriz usada na simulação (Fourier)
+# Matriz sazonal da simulação, construída com Fourier.
 X_sazonal <- X_fourier
 
-# vetor de coeficientes sazonais
+# Coeficientes sazonais na ordem cos1, sen1, cos2, sen2.
 beta_sazonal <- numeric(2 * K)
 
 for(k in 1:K){
@@ -193,7 +171,7 @@ eps <- numeric(n)
 
 for(i in 1:n){
 
-  # eps_t ~ N(0, sigma²)
+  # Ruído branco: eps_t ~ N(0, sigma²).
   eps[i] <- rnorm(1, mean = 0, sd = sigma)
 }
 
@@ -218,7 +196,7 @@ for(i in 1:n){
   Xt[i] <- valor_tendencia + valor_sazonal + eps[i]
 }
 
-# tendência e sazonalidade reais
+# Componentes verdadeiros de tendência e sazonalidade.
 tendencia_real <- numeric(n)
 sazonalidade_real <- numeric(n)
 
@@ -242,7 +220,7 @@ for(i in 1:n){
 }
 
 ############################################################
-# 5. MÉDIA MÓVEL CENTRADA DE RAIO q
+# Média móvel centrada de raio q, com n - 2q valores.
 ############################################################
 
 numero_medias <- n - 2*q
@@ -253,7 +231,7 @@ for(i in (q+1):(n-q)){
 
   soma <- 0
 
-  # janela de 2q + 1 observações ao redor de i
+  # Janela de 2q + 1 observações, de i - q até i + q.
   for(j in (i-q):(i+q)){
 
     soma <- soma + Xt[j]
@@ -266,7 +244,7 @@ for(i in (q+1):(n-q)){
 # 6. ESTIMAÇÃO OLS
 ############################################################
 
-# matriz sazonal do ajuste, escolhida pelo método
+# Escolhe a matriz sazonal do ajuste: Fourier ou dummies.
 if(metodo_sazonal == "fourier"){
 
   X_sazonal_ajuste <- X_fourier
@@ -286,37 +264,32 @@ numero_linhas <- nrow(X_full)
 
 numero_colunas <- ncol(X_full)
 
-# X'X com três loops aninhados (a transposta não é construída)
-# - i e j escolhem a posição (i,j) do resultado, que é p x p;
-# - k percorre as n linhas e soma X[k,i] * X[k,j];
-# - ler a coluna i de X é o mesmo que ler a linha i de X', então
-#   XtX[i,j] é o produto interno da coluna i com a coluna j;
-# - custo: p * p * n multiplicações; a matriz sai simétrica
+# Calcula X'X com três loops, sem construir a transposta.
+# Os loops i e j escolhem a posição (i,j) da matriz p x p.
+# O loop k soma X_full[k,i] * X_full[k,j] nas n linhas.
+# Cada elemento é o produto interno de duas colunas. Custo: n p² multiplicações.
+# A matriz resultante é simétrica.
 XtX <- matrix(0, nrow = numero_colunas, ncol = numero_colunas)
 
 for(i in 1:numero_colunas){
 
   for(j in 1:numero_colunas){
 
-    # produto interno entre a coluna i e a coluna j
     soma <- 0
 
     for(k in 1:numero_linhas){
 
-      # acumula X[k,i] * X[k,j], uma linha por vez
       soma <- soma + X_full[k,i] * X_full[k,j]
 
     }
 
-    # guarda o produto interno na posição (i,j)
     XtX[i,j] <- soma
   }
 }
 
-# X'y com dois loops
-# - i escolhe a coluna de X; k percorre as n linhas e soma X[k,i] * y[k];
-# - Xty[i] é o produto interno da coluna i de X com y;
-# - custo: p * n multiplicações
+# Calcula X'y com dois loops.
+# O loop i escolhe a coluna e k soma X_full[k,i] * Xt[k] nas n linhas.
+# Cada elemento é o produto interno de uma coluna com Xt. Custo: n p multiplicações.
 Xty <- numeric(numero_colunas)
 
 for(i in 1:numero_colunas){
@@ -331,11 +304,9 @@ for(i in 1:numero_colunas){
   Xty[i] <- soma
 }
 
-# equações normais: (X'X) beta = X'y, um sistema linear de p equações
-# - solve(A, b) resolve A beta = b por decomposição LU, sem formar a inversa
-#   de A, o que é mais rápido e mais estável que solve(A) %*% b;
-# - precisa de X'X invertível (colunas de X linearmente independentes);
-# - as.numeric() tira a estrutura de matriz do resultado
+# Resolve (X'X) beta = X'y com solve(XtX, Xty).
+# O sistema tem p equações e é resolvido por decomposição LU, sem formar a inversa.
+# Pré-condição: X'X invertível, com colunas de X_full linearmente independentes.
 beta_hat <- solve(XtX, Xty)
 
 beta_hat <- as.numeric(beta_hat)
@@ -362,7 +333,7 @@ numero_colunas_tendencia <- ncol(X_tendencia)
 
 numero_colunas_sazonal <- ncol(X_sazonal_ajuste)
 
-# coeficientes da tendência e da sazonalidade
+# Separa os coeficientes estimados de tendência e sazonalidade.
 beta_tendencia_hat <- numeric(numero_colunas_tendencia)
 
 for(i in 1:numero_colunas_tendencia){
@@ -416,7 +387,7 @@ for(i in 1:n){
   ss_res <- ss_res + residuos[i]^2
 }
 
-# média de y
+# Média de y.
 soma <- 0
 
 for(i in 1:n){
@@ -434,7 +405,7 @@ for(i in 1:n){
   ss_tot <- ss_tot + d^2
 }
 
-# média dos resíduos
+# Média dos resíduos.
 soma <- 0
 
 for(i in 1:n){
@@ -443,7 +414,7 @@ for(i in 1:n){
 
 media_residuos <- soma / n
 
-# variância dos resíduos
+# Variância amostral dos resíduos.
 soma_quadrados <- 0
 
 for(i in 1:n){
@@ -471,7 +442,7 @@ cat("Coeficientes estimados:\n")
 
 print(round(beta_hat, 4))
 
-# teste t dos coeficientes: t_j = beta_hat_j / ep_j, com ep_j^2 = s2 [(X'X)^-1]_jj
+# Teste t: t_j = beta_hat_j / ep_j, com ep_j² = s2 [(X'X)^-1]_jj.
 p <- numero_colunas
 
 s2 <- ss_res / (n - p)
@@ -490,7 +461,7 @@ for(j in 1:p){
       "- valor-p:", round(valor_p, 4), "\n")
 }
 
-# teste de Box-Pierce: Q = n * soma de rho_hat(h)^2, h = 1, ..., max_lag_box
+# Teste de Box-Pierce: Q = n * soma de rho_hat(h)², de h = 1 até max_lag_box.
 max_lag_box <- 12
 
 gama0 <- 0
@@ -528,7 +499,7 @@ t_futuro <- (n+1):(n+12)
 
 n_futuro <- length(t_futuro)
 
-# matriz de tendência futura
+# Matriz de tendência nos instantes futuros.
 X_tendencia_fut <- matrix(0, nrow = n_futuro, ncol = grau_tendencia + 1)
 
 for(i in 1:n_futuro){
@@ -538,7 +509,7 @@ for(i in 1:n_futuro){
   }
 }
 
-# matriz sazonal futura
+# Matriz sazonal futura, com o mesmo método do ajuste.
 if(metodo_sazonal == "fourier"){
 
   X_sazonal_fut <- matrix(0, nrow = n_futuro, ncol = 2 * K)
@@ -586,8 +557,7 @@ cat("Previsões para os próximos 12 períodos:\n")
 
 print(round(previsoes, 4))
 
-# validação: previsão contra tendência + sazonalidade verdadeiras (sem ruído)
-# (só no método fourier, que é o que gerou a série)
+# Compara a previsão com o sinal verdadeiro, sem ruído, quando o método é Fourier.
 if(metodo_sazonal == "fourier"){
 
   soma_erro2 <- 0
@@ -616,7 +586,7 @@ if(metodo_sazonal == "fourier"){
 
 par(mfrow = c(4,1), mar = c(4,4,2,2))
 
-# série observada + ajustada
+# Série observada e ajustada.
 plot(t, Xt, type = "l", col = "blue", lwd = 2,
      xlab = "Tempo", ylab = "X_t", main = "Série Observada vs Ajustada")
 lines(t, y_hat, col = "red", lwd = 2, lty = 2)
@@ -624,7 +594,7 @@ legend("topleft", legend = c("Série observada", "Série ajustada"),
        col = c("blue", "red"), lwd = c(2, 2), lty = c(1, 2), bty = "n")
 grid()
 
-# tendência
+# Tendência estimada e verdadeira.
 plot(t, tendencia_hat, type = "l", col = "red", lwd = 2,
      xlab = "Tempo", ylab = "Tendência", main = "Tendência")
 lines(t, tendencia_real, col = "blue", lwd = 2)
@@ -632,7 +602,7 @@ legend("topleft", legend = c("Tendência estimada", "Tendência real"),
        col = c("red", "blue"), lwd = 2, bty = "n")
 grid()
 
-# sazonalidade
+# Sazonalidade estimada e verdadeira.
 plot(t, sazonalidade_hat, type = "l", col = "green", lwd = 2,
      xlab = "Tempo", ylab = "Sazonalidade", main = "Sazonalidade")
 lines(t, sazonalidade_real, col = "blue", lwd = 2)
@@ -640,7 +610,7 @@ legend("topleft", legend = c("Sazonalidade estimada", "Sazonalidade real"),
        col = c("green", "blue"), lwd = 2, bty = "n")
 grid()
 
-# resíduos
+# Resíduos ao longo do tempo.
 plot(t, residuos, type = "l", col = "black", lwd = 2,
      xlab = "Tempo", ylab = "Resíduo", main = "Resíduos")
 abline(h = 0, col = "red", lty = 2)
@@ -648,7 +618,7 @@ grid()
 
 par(mfrow = c(1,1))
 
-# comparação entre média móvel e tendência estimada
+# Série, média móvel e tendência estimada por OLS.
 plot(t, Xt, type = "l", col = "blue", lwd = 1.5,
      xlab = "Tempo", ylab = "X_t", main = "Série Temporal, Média Móvel e Tendência")
 

@@ -1,8 +1,7 @@
 ############################################################
 # main.R
-# Pipeline: Configuração -> Simulação/Matrizes -> Estimação OLS
-# -> Diagnóstico -> Previsão -> Visualização.
-# Rodar com a pasta da lista como diretório de trabalho.
+# Coordena configuração, simulação, OLS, diagnóstico, previsão e gráficos.
+# Dependências: parametros.json e scripts/config.R, dados.R, processamento.R e visualizacao.R.
 ############################################################
 
 rm(list = ls())
@@ -42,7 +41,7 @@ beta_sazonal <- criar_beta_sazonal(parametros$alpha, parametros$beta_h, K)
 
 imprimir_titulo_console("SIMULAÇÃO DA SÉRIE")
 
-# matrizes de regressores: montadas aqui e passadas prontas ao ajuste e à previsão
+# Matrizes de regressores, usadas no ajuste e na previsão.
 X_tendencia <- criar_matriz_tendencia(t, grau_tendencia)
 X_fourier <- criar_matriz_fourier(t, s, K)
 X_dummies <- criar_matriz_dummies(t, s)
@@ -53,7 +52,7 @@ Xt <- simular_serie(beta_tendencia = beta_tendencia,
                     beta_sazonal = beta_sazonal,
                     sigma = sigma)
 
-# componentes verdadeiros, para comparar com os estimados
+# Componentes verdadeiros, para comparar com os estimados.
 tendencia_real <- multiplicar_matriz_vetor(X_tendencia, beta_tendencia)
 sazonalidade_real <- multiplicar_matriz_vetor(X_fourier, beta_sazonal)
 
@@ -106,7 +105,7 @@ cat("RMSE (Dummies):", round(diagnostico_dummies$rmse, 4), "\n")
 cat("R² (Fourier):", round(diagnostico_fourier$r2, 4), "\n")
 cat("R² (Dummies):", round(diagnostico_dummies$r2, 4), "\n")
 
-# sazonalidade de cada mês (1 a s), com média zero no ano, para comparar Fourier e dummies no gráfico
+# Efeito de cada mês, com média zero no ano, para comparar Fourier e dummies.
 sazonalidade_mensal_real <- calcular_sazonalidade_mensal(t, sazonalidade_real, s)
 sazonalidade_mensal_fourier <- calcular_sazonalidade_mensal(t, modelo$sazonalidade, s)
 sazonalidade_mensal_dummies <- calcular_sazonalidade_mensal(t, modelo_dummies$sazonalidade, s)
@@ -152,7 +151,7 @@ imprimir_titulo_console("PREVISÃO")
 
 t_futuro <- (n + 1):(n + parametros$n_futuro)
 
-# matrizes nos instantes futuros, com as mesmas colunas do ajuste
+# Matrizes futuras com as mesmas colunas do ajuste.
 X_tendencia_futuro <- criar_matriz_tendencia(t_futuro, grau_tendencia)
 X_fourier_futuro <- criar_matriz_fourier(t_futuro, s, K)
 X_dummies_futuro <- criar_matriz_dummies(t_futuro, s)
@@ -193,7 +192,7 @@ grafico <- plot_decomposicao(
   modelo$residuos
 )
 print(grafico)
-# quatro painéis empilhados: o dobro da altura dos outros gráficos
+# Gráfico de quatro painéis, com o dobro da altura dos demais.
 salvar_grafico(grafico,
                "decomposicao/01_decomposicao_aditiva",
                parametros,

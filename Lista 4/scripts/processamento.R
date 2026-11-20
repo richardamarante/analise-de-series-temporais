@@ -1,15 +1,13 @@
 ############################################################
 # processamento.R
-# OLS pelas equações normais, média móvel, diagnóstico dos
-# resíduos, testes t e de Box-Pierce, sazonalidade por mês e
-# previsão (sem gráficos). As matrizes de regressores chegam
-# prontas, montadas no main.R com as funções de dados.R.
-# Dependências: nenhuma.
+# Calcula média móvel, OLS, diagnóstico, testes t e de Box-Pierce, sazonalidade mensal e previsão.
+# Dependências: nenhuma. Recebe as matrizes de regressores prontas.
 ############################################################
 
-# média móvel centrada de raio q: m_t = (X[t-q] + ... + X[t+q]) / (2q + 1)
-# entrada: serie (vetor numérico de tamanho n), q (inteiro com 2q + 1 <= n)
-# saída: vetor com as n - 2q médias; a primeira corresponde a t = q + 1
+# Calcula a média móvel centrada: m_t = soma de X[t-q] até X[t+q], dividida por 2q + 1.
+# Entrada: serie (vetor n), q (inteiro).
+# Saída: vetor com n - 2q médias, começando em t = q + 1.
+# Pré-condição: 2q + 1 <= n.
 calcular_media_movel <- function(serie, q){
 
   n <- length(serie)
@@ -35,9 +33,10 @@ calcular_media_movel <- function(serie, q){
   return(medias)
 }
 
-# média amostral: soma de X[i] dividida por n
-# entrada: serie (vetor numérico de tamanho n >= 1, sem NA)
-# saída: um número
+# Calcula a média amostral: soma de serie[i] dividida por n.
+# Entrada: serie (vetor numérico).
+# Saída: um número.
+# Pré-condição: n >= 1, sem NA.
 calcular_media_amostral <- function(serie){
 
   n <- length(serie)
@@ -53,9 +52,10 @@ calcular_media_amostral <- function(serie){
   return(media)
 }
 
-# produto matriz-vetor: resultado[i] = soma_j X[i,j] beta[j]
-# entrada: X (matriz n x p), beta (vetor de tamanho p)
-# saída: vetor de tamanho n
+# Multiplica matriz por vetor: resultado[i] = soma_j X[i,j] * beta[j].
+# Entrada: X (matriz n x p), beta (vetor p).
+# Saída: vetor n.
+# Pré-condição: length(beta) = ncol(X).
 multiplicar_matriz_vetor <- function(X, beta){
 
   n <- nrow(X)
@@ -79,9 +79,9 @@ multiplicar_matriz_vetor <- function(X, beta){
   return(resultado)
 }
 
-# X'X: elemento (i,j) é o produto interno da coluna i com a coluna j de X (3 loops)
-# entrada: X (matriz n x p)
-# saída: matriz p x p, simétrica
+# Calcula X'X com três loops, somando o produto interno de cada par de colunas.
+# Entrada: X (matriz n x p).
+# Saída: matriz p x p, simétrica.
 calcular_XtX <- function(X){
 
   numero_linhas <- nrow(X)
@@ -109,9 +109,9 @@ calcular_XtX <- function(X){
   return(resultado)
 }
 
-# X'y: elemento i é o produto interno da coluna i de X com y (2 loops)
-# entrada: X (matriz n x p), y (vetor de tamanho n)
-# saída: vetor de tamanho p
+# Calcula X'y com dois loops, somando o produto interno de cada coluna com y.
+# Entrada: X (matriz n x p), y (vetor n).
+# Saída: vetor p.
 calcular_Xty <- function(X, y){
 
   numero_linhas <- nrow(X)
@@ -135,10 +135,10 @@ calcular_Xty <- function(X, y){
   return(resultado)
 }
 
-# mínimos quadrados pelas equações normais: beta_hat = (X'X)^-1 X'y, com solve(X'X, X'y)
-# entrada: X (matriz n x p), y (vetor de tamanho n)
-# saída: vetor beta_hat de tamanho p
-# pré-condição: X'X invertível, ou seja, colunas de X linearmente independentes
+# Ajusta OLS pelas equações normais: beta_hat = solve(X'X, X'y).
+# Entrada: X (matriz n x p), y (vetor n).
+# Saída: vetor beta_hat de tamanho p.
+# Pré-condição: X'X invertível, com colunas de X linearmente independentes.
 ajustar_ols <- function(X, y){
 
   XtX <- calcular_XtX(X)
@@ -152,24 +152,24 @@ ajustar_ols <- function(X, y){
   return(beta_hat)
 }
 
-# Ajusta tendência mais sazonalidade por OLS com as matrizes já montadas e separa os componentes estimados
-# Entrada: y (vetor de tamanho n), X_tendencia (matriz n x p1), X_sazonal (matriz n x p2, de Fourier ou de dummies)
-# Saída: lista com beta_hat, y_hat, tendencia, sazonalidade, residuos e X_full
-# Pré-condição: as duas matrizes têm n linhas e n é maior que p1 + p2
+# Ajusta tendência e sazonalidade por OLS e separa os componentes estimados.
+# Entrada: y (vetor n), X_tendencia (matriz n x p1), X_sazonal (matriz n x p2).
+# Saída: lista com beta_hat, y_hat, tendencia, sazonalidade, residuos e X_full.
+# Pré-condição: matrizes com n linhas, n > p1 + p2 e X'X invertível.
 ajustar_modelo <- function(y, X_tendencia, X_sazonal){
 
   y <- as.numeric(y)
 
-  # Matriz completa: colunas da tendência e depois as da sazonalidade
+  # Junta as colunas da tendência e da sazonalidade.
   X_full <- cbind(X_tendencia, X_sazonal)
 
-  # Estimação dos coeficientes
+  # Estima os coeficientes por OLS.
   beta_hat <- ajustar_ols(X_full, y)
 
-  # Valores ajustados
+  # Calcula os valores ajustados.
   y_hat <- multiplicar_matriz_vetor(X_full, beta_hat)
 
-  # Coeficientes da tendência
+  # Separa os coeficientes da tendência.
   numero_colunas_tendencia <- ncol(X_tendencia)
 
   beta_tendencia_hat <- numeric(numero_colunas_tendencia)
@@ -180,7 +180,7 @@ ajustar_modelo <- function(y, X_tendencia, X_sazonal){
 
   }
 
-  # Coeficientes da sazonalidade
+  # Separa os coeficientes da sazonalidade.
   numero_colunas_sazonal <- ncol(X_sazonal)
 
   beta_sazonal_hat <- numeric(numero_colunas_sazonal)
@@ -190,12 +190,12 @@ ajustar_modelo <- function(y, X_tendencia, X_sazonal){
     beta_sazonal_hat[i] <- beta_hat[numero_colunas_tendencia + i]
   }
 
-  # Componentes estimados
+  # Calcula os componentes estimados.
   tendencia_hat <- multiplicar_matriz_vetor(X_tendencia, beta_tendencia_hat)
 
   sazonalidade_hat <- multiplicar_matriz_vetor(X_sazonal, beta_sazonal_hat)
 
-  # Resíduos
+  # Resíduos: diferença entre y e y_hat.
   n <- length(y)
 
   residuos <- numeric(n)
@@ -217,26 +217,25 @@ ajustar_modelo <- function(y, X_tendencia, X_sazonal){
   )
 }
 
-# diagnóstico dos resíduos e = y - y_hat: média, variância (divisor n - 1),
-# rmse = sqrt(soma e^2 / n) e r2 = 1 - soma e^2 / soma (y - média de y)^2
-# entrada: y (vetor de tamanho n), residuos (vetor de tamanho n)
-# saída: lista com media, variancia, rmse e r2
-# pré-condição: n >= 2 e y não constante
+# Calcula média, variância amostral, RMSE e R² dos resíduos.
+# Entrada: y e residuos (vetores n).
+# Saída: lista com media, variancia, rmse e r2.
+# Pré-condição: n >= 2 e y não constante.
 diagnostico <- function(y, residuos){
 
   n <- length(y)
 
-  # soma dos quadrados dos resíduos
+  # Soma dos quadrados dos resíduos.
   ss_res <- 0
 
   for(i in 1:n){
     ss_res <- ss_res + residuos[i]^2
   }
 
-  # média de y
+  # Média de y.
   media_y <- calcular_media_amostral(y)
 
-  # soma total dos quadrados
+  # Soma total dos quadrados em relação à média de y.
   ss_tot <- 0
 
   for(i in 1:n){
@@ -246,10 +245,10 @@ diagnostico <- function(y, residuos){
     ss_tot <- ss_tot + d^2
   }
 
-  # média dos resíduos
+  # Média dos resíduos.
   media_residuos <- calcular_media_amostral(residuos)
 
-  # variância dos resíduos
+  # Soma dos quadrados dos desvios dos resíduos em relação à média.
   soma_quadrados <- 0
 
   for(i in 1:n){
@@ -270,13 +269,13 @@ diagnostico <- function(y, residuos){
   return(list(media = media_residuos, variancia = variancia_residuos, rmse = rmse, r2 = r2))
 }
 
-# Previsão fora da amostra: X_futura beta_hat, com X_futura = [X_tendencia_futuro | X_sazonal_futuro]
-# Entrada: modelo (lista devolvida por ajustar_modelo), X_tendencia_futuro (matriz h x p1), X_sazonal_futuro (matriz h x p2)
-# Saída: vetor de previsões de tamanho h
-# Pré-condição: as matrizes futuras foram montadas nos instantes depois do fim da amostra, com as mesmas colunas do ajuste
+# Prevê fora da amostra: previsoes = X_futuro beta_hat.
+# Entrada: modelo, X_tendencia_futuro e X_sazonal_futuro (matrizes com h linhas).
+# Saída: vetor de previsões de tamanho h.
+# Pré-condição: matrizes futuras com as mesmas colunas e ordem do ajuste.
 prever <- function(modelo, X_tendencia_futuro, X_sazonal_futuro){
 
-  # Matriz futura completa, com as colunas na ordem do ajuste
+  # Junta as matrizes futuras na ordem do ajuste.
   X_futuro <- cbind(X_tendencia_futuro, X_sazonal_futuro)
 
   if(ncol(X_futuro) != length(modelo$beta_hat)){
@@ -284,16 +283,16 @@ prever <- function(modelo, X_tendencia_futuro, X_sazonal_futuro){
     stop("As matrizes futuras não têm o número de colunas do ajuste")
   }
 
-  # Previsões
+  # Multiplica a matriz futura pelos coeficientes estimados.
   previsoes <- multiplicar_matriz_vetor(X_futuro, modelo$beta_hat)
 
   return(previsoes)
 }
 
-# Sazonalidade de cada mês: média do componente nos instantes do mês m, menos a média dos periodo valores
-# Entrada: t (vetor de inteiros de tamanho n), sazonalidade (vetor de tamanho n), periodo (inteiro >= 2)
-# Saída: vetor de tamanho periodo, com média zero; o elemento m é o efeito do mês m = ((t - 1) %% periodo) + 1
-# Pré-condição: cada mês aparece pelo menos uma vez em t
+# Calcula o efeito médio de cada mês e centraliza para média zero.
+# Entrada: t (vetor de inteiros), sazonalidade (vetor n), periodo (inteiro >= 2).
+# Saída: vetor de tamanho periodo, com um efeito para cada mês.
+# Pré-condição: cada mês aparece pelo menos uma vez.
 calcular_sazonalidade_mensal <- function(t, sazonalidade, periodo){
 
   n <- length(t)
@@ -302,7 +301,7 @@ calcular_sazonalidade_mensal <- function(t, sazonalidade, periodo){
 
   contagem <- numeric(periodo)
 
-  # Soma e contagem dos instantes de cada mês, com a mesma regra de mês da matriz de dummies
+  # Soma os valores e conta as observações de cada mês, usando ((t - 1) %% periodo) + 1.
   for(i in 1:n){
 
     mes <- ((t[i] - 1) %% periodo) + 1
@@ -319,7 +318,7 @@ calcular_sazonalidade_mensal <- function(t, sazonalidade, periodo){
     media_mes[m] <- soma[m] / contagem[m]
   }
 
-  # Centraliza: nas dummies o mês 1 é a referência e o nível dele fica no intercepto
+  # Centraliza os efeitos mensais, pois o mês 1 das dummies fica no intercepto.
   media_geral <- calcular_media_amostral(media_mes)
 
   sazonalidade_mensal <- numeric(periodo)
@@ -332,11 +331,12 @@ calcular_sazonalidade_mensal <- function(t, sazonalidade, periodo){
   return(sazonalidade_mensal)
 }
 
-# teste t dos coeficientes: t_j = beta_hat_j / ep_j, com ep_j^2 = s2 [(X'X)^-1]_jj e s2 = soma e^2 / (n - p);
-# valor-p = 2 (1 - P(T <= |t_j|)), T com n - p graus de liberdade; H0: beta_j = 0
-# entrada: modelo (lista devolvida por ajustar_modelo)
-# saída: data.frame com beta_hat, erro_padrao, estatistica_t e valor_p, uma linha por coeficiente
-# pré-condição: X'X invertível e n > p
+# Testa H0: beta_j = 0, com t_j = beta_hat_j / ep_j.
+# O erro padrão usa ep_j² = s2 [(X'X)^-1]_jj, com s2 = soma e² / (n - p).
+# O valor-p é bilateral, calculado pela distribuição t com n - p graus de liberdade.
+# Entrada: modelo (lista de ajustar_modelo).
+# Saída: data.frame com beta_hat, erro_padrao, estatistica_t e valor_p.
+# Pré-condição: X'X invertível e n > p.
 teste_t_coeficientes <- function(modelo){
 
   X <- modelo$X_full
@@ -347,7 +347,7 @@ teste_t_coeficientes <- function(modelo){
 
   p <- ncol(X)
 
-  # soma dos quadrados dos resíduos
+  # Soma dos quadrados dos resíduos.
   ss_res <- 0
 
   for(i in 1:n){
@@ -379,17 +379,19 @@ teste_t_coeficientes <- function(modelo){
                     valor_p = valor_p))
 }
 
-# teste de Box-Pierce: Q = n soma_{h=1}^{max_lag} rho_hat(h)^2, com rho_hat(h) = gama_hat(h) / gama_hat(0);
-# valor-p = 1 - P(chi2 com max_lag graus de liberdade <= Q); H0: resíduos sem autocorrelação
-# entrada: residuos (vetor numérico de tamanho n), max_lag (inteiro com 1 <= max_lag < n)
-# saída: lista com Q e valor_p
+# Testa H0: resíduos sem autocorrelação, com Q = n * soma de rho_hat(h)².
+# A soma vai de h = 1 até max_lag, com rho_hat(h) = gama_hat(h) / gama_hat(0).
+# O valor-p usa a distribuição qui-quadrado com max_lag graus de liberdade.
+# Entrada: residuos (vetor n), max_lag (inteiro).
+# Saída: lista com Q e valor_p.
+# Pré-condição: 1 <= max_lag < n.
 teste_box_pierce <- function(residuos, max_lag){
 
   n <- length(residuos)
 
   media <- calcular_media_amostral(residuos)
 
-  # autocovariância de lag 0
+  # Autocovariância amostral de lag 0.
   gama0 <- 0
 
   for(i in 1:n){

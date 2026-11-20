@@ -1,12 +1,11 @@
 ############################################################
 # visualizacao.R
-# Gráficos com ggplot2: observada x ajustada, tendência,
-# sazonalidade, sazonalidade por mês (Fourier x dummies),
-# resíduos, decomposição, média móvel e previsão.
+# Cria gráficos de série, ajuste, tendência, sazonalidade, resíduos, decomposição e previsão.
+# Inclui média móvel, sazonalidade mensal, FAC e histograma.
 # Dependências: pacote ggplot2.
 ############################################################
 
-# cores dos gráficos
+# Cores usadas nos gráficos.
 cor_principal <- "#37474F"
 cor_referencia <- "#C44E52"
 cor_trajetorias <- "#B0B0B0"
@@ -16,9 +15,9 @@ cor_covariancia <- "#3F7F8F"
 cor_histograma <- "#90A4AE"
 cor_media_movel <- "#E08A1E"
 
-# tema comum a todos os gráficos
-# entrada: nenhuma
-# saída: objeto de tema do ggplot2
+# Define o tema comum dos gráficos.
+# Entrada: nenhuma.
+# Saída: objeto de tema do ggplot2.
 tema_graficos <- function(){
   return(
     theme_classic(base_size = 13) +
@@ -35,11 +34,9 @@ tema_graficos <- function(){
   )
 }
 
-# Ajusta as folgas dos eixos: 2% à direita do eixo x, para o último rótulo não sair cortado, e 5% acima e abaixo
-# no eixo y, para os picos não encostarem na borda
-# Entrada: grafico (objeto ggplot), folga_y_inferior (fração da amplitude abaixo do eixo y, 0.05 por padrão),
-#          marcas_x (vetor com as marcas do eixo x; por padrão o ggplot escolhe)
-# Saída: o mesmo gráfico com as escalas contínuas ajustadas
+# Ajusta as folgas dos eixos e as marcas do eixo x.
+# Entrada: grafico (ggplot), folga_y_inferior (fração, padrão 0.05), marcas_x (vetor ou waiver()).
+# Saída: gráfico com 2% de folga à direita e 5% acima, além da folga inferior escolhida.
 ajustar_eixos <- function(grafico, folga_y_inferior = 0.05, marcas_x = waiver()){
   grafico <- grafico +
     scale_x_continuous(breaks = marcas_x,
@@ -49,11 +46,10 @@ ajustar_eixos <- function(grafico, folga_y_inferior = 0.05, marcas_x = waiver())
   return(grafico)
 }
 
-# Salva o gráfico em png dentro de graficos/, se salvar_graficos for verdadeiro
-# Entrada: grafico (objeto ggplot), nome_arquivo (texto, subpasta e nome sem extensão), parametros (lista),
-#          fator_altura (número que multiplica altura_grafico, 1 por padrão)
-# Saída: nenhuma; cria o arquivo e a pasta se não existirem
-# Pré-condição: parametros tem salvar_graficos, largura_grafico, altura_grafico e dpi_grafico
+# Salva o gráfico em PNG na pasta graficos/, quando salvar_graficos é verdadeiro.
+# Entrada: grafico (ggplot), nome_arquivo (caminho sem extensão), parametros e fator_altura.
+# Saída: nenhuma. Cria a pasta e o arquivo quando necessário.
+# Pré-condição: parametros contém salvar_graficos, largura_grafico, altura_grafico e dpi_grafico.
 salvar_grafico <- function(grafico, nome_arquivo, parametros, fator_altura = 1){
   if(parametros$salvar_graficos){
     caminho <- paste0("graficos/", nome_arquivo, ".png")
@@ -70,16 +66,16 @@ salvar_grafico <- function(grafico, nome_arquivo, parametros, fator_altura = 1){
   }
 }
 
-# imprime um título de seção no console
-# entrada: titulo (texto)
-# saída: nenhuma
+# Imprime um título de seção no console.
+# Entrada: titulo (texto).
+# Saída: nenhuma.
 imprimir_titulo_console <- function(titulo){
   cat("\n# -- ", titulo, " -- #\n\n", sep = "")
 }
 
-# série observada e série ajustada pelo modelo
-# entrada: t (vetor de tamanho n), serie (vetor de tamanho n), ajustada (vetor de tamanho n)
-# saída: objeto ggplot
+# Mostra a série observada e a ajustada.
+# Entrada: t, serie, ajustada (vetores n).
+# Saída: objeto ggplot.
 plot_serie_ajustada <- function(t, serie, ajustada){
 
   dados <- data.frame(
@@ -116,9 +112,9 @@ plot_serie_ajustada <- function(t, serie, ajustada){
   return(grafico)
 }
 
-# tendência estimada, com a tendência verdadeira por cima quando houver
-# entrada: t (vetor de tamanho n), tendencia_estimada (vetor de tamanho n), tendencia_real (vetor de tamanho n ou NULL)
-# saída: objeto ggplot
+# Mostra a tendência estimada e, quando disponível, a verdadeira.
+# Entrada: t, tendencia_estimada (vetores n), tendencia_real (vetor n ou NULL).
+# Saída: objeto ggplot.
 plot_tendencia <- function(t, tendencia_estimada, tendencia_real = NULL){
 
   dados <- data.frame(
@@ -171,9 +167,9 @@ plot_tendencia <- function(t, tendencia_estimada, tendencia_real = NULL){
   return(grafico)
 }
 
-# sazonalidade estimada, com a verdadeira por cima quando houver
-# entrada: t (vetor de tamanho n), sazonalidade_estimada (vetor de tamanho n), sazonalidade_real (vetor de tamanho n ou NULL)
-# saída: objeto ggplot
+# Mostra a sazonalidade estimada e, quando disponível, a verdadeira.
+# Entrada: t, sazonalidade_estimada (vetores n), sazonalidade_real (vetor n ou NULL).
+# Saída: objeto ggplot.
 plot_sazonalidade <- function(t, sazonalidade_estimada, sazonalidade_real = NULL){
 
   dados <- data.frame(
@@ -226,10 +222,10 @@ plot_sazonalidade <- function(t, sazonalidade_estimada, sazonalidade_real = NULL
   return(grafico)
 }
 
-# Sazonalidade por mês (1 a s): a real e as estimadas por Fourier e por dummies, cada uma com média zero no ano
-# Entrada: sazonalidade_real, sazonalidade_fourier, sazonalidade_dummies (vetores de tamanho s, de calcular_sazonalidade_mensal)
-# Saída: objeto ggplot
-# Pré-condição: os três vetores têm o mesmo tamanho
+# Compara os efeitos mensais reais e estimados por Fourier e dummies, com média zero.
+# Entrada: sazonalidade_real, sazonalidade_fourier e sazonalidade_dummies (vetores s).
+# Saída: objeto ggplot.
+# Pré-condição: os três vetores têm o mesmo tamanho.
 plot_sazonalidade_mensal <- function(sazonalidade_real, sazonalidade_fourier, sazonalidade_dummies){
 
   periodo <- length(sazonalidade_real)
@@ -295,9 +291,9 @@ plot_sazonalidade_mensal <- function(sazonalidade_real, sazonalidade_fourier, sa
   return(grafico)
 }
 
-# série temporal dos resíduos, com a linha em zero
-# entrada: t (vetor de tamanho n), residuos (vetor de tamanho n)
-# saída: objeto ggplot
+# Mostra os resíduos ao longo do tempo, com linha de referência em zero.
+# Entrada: t, residuos (vetores n).
+# Saída: objeto ggplot.
 plot_residuos <- function(t, residuos){
 
   dados <- data.frame(
@@ -338,10 +334,9 @@ plot_residuos <- function(t, residuos){
   return(grafico)
 }
 
-# série, média móvel centrada e tendência estimada
-# entrada: t (vetor de tamanho n), serie (vetor de tamanho n), media_movel (vetor de tamanho n - 2q),
-#          tendencia (vetor de tamanho n), q (inteiro)
-# saída: objeto ggplot
+# Compara a série, a média móvel centrada e a tendência estimada.
+# Entrada: t, serie, tendencia (vetores n), media_movel (vetor n - 2q), q (inteiro).
+# Saída: objeto ggplot.
 plot_serie_media_movel <- function(t, serie, media_movel, tendencia, q){
 
   n <- length(serie)
@@ -395,10 +390,10 @@ plot_serie_media_movel <- function(t, serie, media_movel, tendencia, q){
   return(grafico)
 }
 
-# Decomposição aditiva em quatro painéis: série, tendência, sazonalidade e resíduos
-# Entrada: t, serie, tendencia, sazonalidade, residuos (todos vetores de tamanho n)
-# Saída: objeto ggplot com facet_wrap, cada painel com a sua escala em y e folga de 2% à direita do eixo x
-# Pré-condição: série = tendência + sazonalidade + resíduos
+# Mostra a decomposição aditiva em quatro painéis: série, tendência, sazonalidade e resíduos.
+# Entrada: t, serie, tendencia, sazonalidade, residuos (vetores n).
+# Saída: objeto ggplot com escalas independentes em y e folga de 2% à direita.
+# Pré-condição: serie = tendencia + sazonalidade + residuos.
 plot_decomposicao <- function(t, serie, tendencia, sazonalidade, residuos){
 
   componentes <- c("Série Observada",
@@ -445,11 +440,11 @@ plot_decomposicao <- function(t, serie, tendencia, sazonalidade, residuos){
   return(grafico)
 }
 
-# Série observada, previsões por Fourier e por dummies e, quando houver, o sinal verdadeiro nos instantes futuros
-# Entrada: t, serie (vetores de tamanho n), t_futuro, previsoes_fourier, previsoes_dummies (vetores de tamanho n_futuro),
-#          sinal_futuro (vetor de tamanho n_futuro ou NULL)
-# Saída: objeto ggplot
-# Pré-condição: t_futuro, previsoes_fourier e previsoes_dummies têm o mesmo tamanho
+# Mostra a série observada e as previsões por Fourier e dummies, com o sinal verdadeiro se houver.
+# Entrada: t, serie (vetores n), t_futuro, previsoes_fourier, previsoes_dummies (vetores n_futuro).
+# Entrada opcional: sinal_futuro (vetor n_futuro ou NULL).
+# Saída: objeto ggplot.
+# Pré-condição: os vetores futuros têm o mesmo tamanho.
 plot_previsao <- function(t, serie, t_futuro, previsoes_fourier, previsoes_dummies, sinal_futuro = NULL){
 
   n <- length(serie)
@@ -461,7 +456,7 @@ plot_previsao <- function(t, serie, t_futuro, previsoes_fourier, previsoes_dummi
     serie = serie
   )
 
-  # As duas previsões partem do último valor observado
+  # Faz as duas linhas de previsão partirem do último valor observado.
   dados_previsao <- data.frame(
     tempo = rep(c(n, t_futuro), times = 2),
     previsao = c(serie[n], previsoes_fourier, serie[n], previsoes_dummies),
@@ -524,15 +519,15 @@ plot_previsao <- function(t, serie, t_futuro, previsoes_fourier, previsoes_dummi
          y = expression(X[t])) +
     tema_graficos()
 
-  # Marcas do eixo x escolhidas sobre 1 a n + n_futuro, sem a folga, que reduziria o eixo a duas marcas
+  # Define as marcas do eixo x sobre 1 a n + n_futuro, sem considerar a folga do gráfico.
   grafico <- ajustar_eixos(grafico, marcas_x = pretty(c(1, max(t_futuro))))
 
   return(grafico)
 }
 
-# Função de autocorrelação amostral, com as bandas de +-1,96 / sqrt(n) e folga à direita e acima para o último rótulo e o pico
-# Entrada: serie (vetor numérico sem NA), titulo (texto)
-# Saída: objeto ggplot
+# Mostra a FAC amostral com bandas de ±1,96 / sqrt(n).
+# Entrada: serie (vetor numérico sem NA), titulo (texto).
+# Saída: objeto ggplot com folga à direita e acima.
 plot_acf <- function(serie, titulo){
 
   resultado <- acf(serie, plot = FALSE)
@@ -589,9 +584,9 @@ plot_acf <- function(serie, titulo){
   return(grafico)
 }
 
-# Histograma com a densidade normal de variância sigma2 por cima, com as barras apoiadas no eixo x
-# Entrada: serie (vetor numérico), titulo (texto), xlab (rótulo do eixo x), sigma2 (variância, > 0)
-# Saída: objeto ggplot
+# Mostra o histograma com a densidade normal de variância sigma2.
+# Entrada: serie (vetor), titulo, xlab (textos), sigma2 (numérico > 0).
+# Saída: objeto ggplot.
 plot_histograma <- function(serie, titulo, xlab, sigma2){
 
   dados <- data.frame(valor = serie)
@@ -628,7 +623,7 @@ plot_histograma <- function(serie, titulo, xlab, sigma2){
          y = "Densidade") +
     tema_graficos()
 
-  # Sem folga embaixo, para as barras começarem no zero
+  # Remove a folga inferior para as barras começarem em zero.
   grafico <- ajustar_eixos(grafico, folga_y_inferior = 0)
 
   return(grafico)

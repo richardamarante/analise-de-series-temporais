@@ -1,9 +1,7 @@
 ############################################################
 # ex4_eficiencia.R
-# Exercício 4.3: compara os loops de X'X, X'y e X·beta com as
-# operações matriciais do R (crossprod e o operador %*%),
-# confere o OLS com o lm() e desenha o tempo em função de n.
-# Rodar com a pasta da lista como diretório de trabalho.
+# Compara loops com crossprod e %*%, confere o OLS com lm() e mede o tempo em função de n.
+# Dependências: parametros.json e scripts/config.R, dados.R, processamento.R e visualizacao.R.
 ############################################################
 
 rm(list = ls())
@@ -16,50 +14,50 @@ source("scripts/dados.R")
 source("scripts/processamento.R")
 source("scripts/visualizacao.R")
 
-# X'X com crossprod, sem loops
-# entrada: X (matriz n x p)
-# saída: matriz p x p, igual à de calcular_XtX
+# Calcula X'X com crossprod(X), sem loops.
+# Entrada: X (matriz n x p).
+# Saída: matriz p x p.
 calcular_XtX_vetorizada <- function(X){
   resultado <- crossprod(X)
   return(resultado)
 }
 
-# X'y com crossprod, sem loops
-# entrada: X (matriz n x p), y (vetor de tamanho n)
-# saída: vetor de tamanho p, igual ao de calcular_Xty
+# Calcula X'y com crossprod(X, y), sem loops.
+# Entrada: X (matriz n x p), y (vetor n).
+# Saída: vetor p.
 calcular_Xty_vetorizada <- function(X, y){
   resultado <- as.numeric(crossprod(X, y))
   return(resultado)
 }
 
-# X'X com a transposta montada e o operador %*%: t(X) %*% X, sem loops
-# Entrada: X (matriz n x p)
-# Saída: matriz p x p, igual à de calcular_XtX
+# Calcula X'X com t(X) %*% X, sem loops.
+# Entrada: X (matriz n x p).
+# Saída: matriz p x p.
 calcular_XtX_transposta <- function(X){
   resultado <- t(X) %*% X
   return(resultado)
 }
 
-# X'y com a transposta montada e o operador %*%: t(X) %*% y, sem loops
-# Entrada: X (matriz n x p), y (vetor de tamanho n)
-# Saída: vetor de tamanho p, igual ao de calcular_Xty
+# Calcula X'y com t(X) %*% y, sem loops.
+# Entrada: X (matriz n x p), y (vetor n).
+# Saída: vetor p.
 calcular_Xty_transposta <- function(X, y){
   resultado <- as.numeric(t(X) %*% y)
   return(resultado)
 }
 
-# X beta com o operador %*%, sem loops
-# entrada: X (matriz n x p), beta (vetor de tamanho p)
-# saída: vetor de tamanho n, igual ao de multiplicar_matriz_vetor
+# Calcula X beta com %*%, sem loops.
+# Entrada: X (matriz n x p), beta (vetor p).
+# Saída: vetor n.
 multiplicar_matriz_vetor_vetorizada <- function(X, beta){
   resultado <- as.numeric(X %*% beta)
   return(resultado)
 }
 
-# OLS com as versões vetorizadas de X'X e X'y: beta_hat = solve(X'X, X'y)
-# entrada: X (matriz n x p), y (vetor de tamanho n)
-# saída: vetor beta_hat de tamanho p
-# pré-condição: X'X invertível
+# Ajusta OLS com crossprod: beta_hat = solve(X'X, X'y).
+# Entrada: X (matriz n x p), y (vetor n).
+# Saída: vetor beta_hat de tamanho p.
+# Pré-condição: X'X invertível.
 ajustar_ols_vetorizada <- function(X, y){
 
   XtX <- calcular_XtX_vetorizada(X)
@@ -71,10 +69,10 @@ ajustar_ols_vetorizada <- function(X, y){
   return(beta_hat)
 }
 
-# OLS com t(X) %*% X e t(X) %*% y: beta_hat = solve(X'X, X'y)
-# Entrada: X (matriz n x p), y (vetor de tamanho n)
-# Saída: vetor beta_hat de tamanho p
-# Pré-condição: X'X invertível
+# Ajusta OLS com t(X) %*% X e t(X) %*% y.
+# Entrada: X (matriz n x p), y (vetor n).
+# Saída: vetor beta_hat de tamanho p.
+# Pré-condição: X'X invertível.
 ajustar_ols_transposta <- function(X, y){
 
   XtX <- calcular_XtX_transposta(X)
@@ -86,20 +84,20 @@ ajustar_ols_transposta <- function(X, y){
   return(beta_hat)
 }
 
-# Maior diferença relativa entre dois resultados: max |a - b| / max |a|
-# Entrada: a (resultado de referência, vetor ou matriz), b (resultado comparado, do mesmo tamanho)
-# Saída: número; da ordem de 1e-16 quer dizer que as duas contas só diferem no arredondamento
-# Pré-condição: a tem algum elemento diferente de zero
+# Calcula a maior diferença relativa: max(abs(a - b)) / max(abs(a)).
+# Entrada: a (referência), b (resultado comparado, do mesmo tamanho).
+# Saída: número; valores próximos de 1e-16 indicam diferenças de arredondamento.
+# Pré-condição: a contém pelo menos um valor diferente de zero.
 calcular_diferenca_relativa <- function(a, b){
   diferenca <- max(abs(a - b)) / max(abs(a))
   return(diferenca)
 }
 
-# Mede o tempo de X'X, X'y e X beta com loops, com crossprod e com o operador %*% e compara os resultados com os dos loops
-# Entrada: X (matriz n x p), y (vetor de tamanho n), beta (vetor de tamanho p), repeticoes (inteiro positivo)
-# Saída: data.frame com uma linha por operação e versão: n, operacao, versao, expressao, tempo (s, soma das repetições),
-#        igual (all.equal com os loops) e diferenca_relativa (em relação aos loops)
-# Pré-condição: nrow(X) == length(y) e ncol(X) == length(beta)
+# Mede X'X, X'y e X beta com loops, crossprod e %*%, comparando os resultados.
+# Entrada: X (matriz n x p), y (vetor n), beta (vetor p), repeticoes (inteiro positivo).
+# Saída: data.frame com n, operacao, versao, expressao, tempo, igual e diferenca_relativa.
+# O tempo é a soma das repetições, em segundos. A referência são os loops.
+# Pré-condição: nrow(X) = length(y) e ncol(X) = length(beta).
 medir_tempos <- function(X, y, beta, repeticoes){
 
   # X'X
@@ -121,7 +119,7 @@ medir_tempos <- function(X, y, beta, repeticoes){
     }
   })[["elapsed"]]
 
-  # X'y
+  # Tempo de X'y com loops.
   tempo_loop_Xty <- system.time({
     for(r in 1:repeticoes){
       Xty_loop <- calcular_Xty(X, y)
@@ -140,7 +138,7 @@ medir_tempos <- function(X, y, beta, repeticoes){
     }
   })[["elapsed"]]
 
-  # X beta
+  # Tempo de X beta com loops.
   tempo_loop_mv <- system.time({
     for(r in 1:repeticoes){
       mv_loop <- multiplicar_matriz_vetor(X, beta)
@@ -188,11 +186,10 @@ medir_tempos <- function(X, y, beta, repeticoes){
   return(tempos)
 }
 
-# Compara loops e operações vetorizadas: exatidão do OLS com o n da série e tempo de X'X, X'y e X beta para vários n
-# Entrada: parametros (lista com seed, n_anos, s, K, grau_tendencia, beta_tendencia, alpha, beta_h, sigma,
-#          n_eficiencia, n_grafico_eficiencia e repeticoes_eficiencia)
-# Saída: data.frame de medir_tempos com todos os tamanhos medidos; imprime a exatidão e os tempos com n_eficiencia
-# Pré-condição: parametros lido por ler_parametros
+# Compara a exatidão do OLS e os tempos de X'X, X'y e X beta para vários tamanhos.
+# Entrada: parametros (lista de configuração, simulação e tamanhos do teste).
+# Saída: data.frame com os tempos; imprime a exatidão e os tempos em n_eficiencia.
+# Pré-condição: parametros lido por ler_parametros.
 comparar_eficiencia <- function(parametros){
 
   fixar_semente(parametros)
@@ -202,7 +199,7 @@ comparar_eficiencia <- function(parametros){
 
   beta_sazonal <- criar_beta_sazonal(parametros$alpha, parametros$beta_h, K)
 
-  # Exatidão: OLS completo com o n da série, contra o lm()
+  # Exatidão do OLS com o tamanho original da série, comparando com lm().
   t <- criar_tempo(parametros)
 
   X_tendencia <- criar_matriz_tendencia(t, parametros$grau_tendencia)
@@ -224,7 +221,7 @@ comparar_eficiencia <- function(parametros){
   cat("Coeficientes iguais ao lm() (crossprod):", isTRUE(all.equal(beta_vetorizada, beta_lm)), "\n")
   cat("Coeficientes iguais ao lm() (t(X) %*% X):", isTRUE(all.equal(beta_transposta, beta_lm)), "\n")
 
-  # Tempo: X'X, X'y e X beta (sem o solve) em cada tamanho do gráfico e em n_eficiencia, cada um medido uma vez
+  # Tempos de X'X, X'y e X beta, sem solve(), para cada tamanho e com uma medição por versão.
   n_grande <- parametros$n_eficiencia
 
   tamanhos <- unique(c(parametros$n_grafico_eficiencia, n_grande))
@@ -249,7 +246,7 @@ comparar_eficiencia <- function(parametros){
   cat("Colunas de X:", ncol(X_atual), "\n")
   cat("Repetições:", repeticoes, "\n")
 
-  # Cada versão vetorizada contra os loops da mesma operação, com n_eficiencia
+  # Compara cada versão vetorizada com os loops, usando n_eficiencia.
   tempos_grande <- tempos[tempos$n == n_grande, ]
 
   for(i in 1:nrow(tempos_grande)){
@@ -272,10 +269,10 @@ comparar_eficiencia <- function(parametros){
   return(tempos)
 }
 
-# Tempo em função de n, um painel por operação e uma linha por versão (loops, crossprod e operador %*%)
-# Entrada: tempos (data.frame de comparar_eficiencia), repeticoes (inteiro, entra no rótulo do eixo y)
-# Saída: objeto ggplot com facet_wrap, cada painel com a sua escala em y
-# Pré-condição: visualizacao.R carregado (cores e tema_graficos)
+# Mostra o tempo em função de n, com um painel por operação e uma linha por versão.
+# Entrada: tempos (data.frame), repeticoes (inteiro usado no eixo y).
+# Saída: objeto ggplot com escalas independentes em y.
+# Pré-condição: visualizacao.R carregado.
 plot_tempo_eficiencia <- function(tempos, repeticoes){
 
   versoes <- c("Loops", "crossprod()", "Operador %*%")
