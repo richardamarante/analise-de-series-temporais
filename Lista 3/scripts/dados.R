@@ -1,11 +1,11 @@
 ############################################################
 # dados.R
-# Simula o ruído branco, calcula a tendência polinomial e simula a série com tendência.
+# Simula o ruído branco e a série com tendência polinomial, calculada a partir de X e beta.
 # Dependências: nenhuma.
 ############################################################
 
-# Simula n valores independentes de ruído branco, eps_t ~ N(0, sigma²).
-# Entrada: n (inteiro positivo), sigma (desvio padrão).
+# Simula n valores independentes de ruído branco, com eps_t ~ N(0, sigma²).
+# Entrada: n inteiro positivo e sigma como desvio padrão.
 # Saída: vetor numérico de tamanho n.
 # Pré-condição: sigma > 0.
 simular_ruido_branco <- function(n, sigma){
@@ -19,8 +19,8 @@ simular_ruido_branco <- function(n, sigma){
   return(eps)
 }
 
-# Calcula a tendência sem ruído: mu_t = β₀ + β₁*t + β₂*t², ou X %*% beta.
-# Entrada: beta (vetor com ncol(X) coeficientes), X (matriz n x p).
+# Calcula a tendência mu_t = β₀ + β₁*t + β₂*t², equivalente a X %*% beta.
+# Entrada: beta com ncol(X) coeficientes e X como matriz n x p.
 # Saída: vetor numérico de tamanho n.
 # Pré-condição: length(beta) == ncol(X).
 calcular_tendencia <- function(beta, X){
@@ -31,13 +31,12 @@ calcular_tendencia <- function(beta, X){
 
   numero_colunas <- ncol(X)
 
-  # O loop de fora percorre os instantes t, que são as linhas de X.
   for(t in 1:n){
 
     valor <- 0
 
-    # O loop de dentro soma X[t,j] * beta[j] para cada coluna j.
-    # Ao final, a soma é o valor da tendência no instante t.
+    # Para cada instante t, soma X[t,j] * beta[j] ao percorrer as colunas de X,
+    # obtendo o valor da tendência naquele instante.
     for(j in 1:numero_colunas){
       valor <- valor + X[t,j] * beta[j]
     }
@@ -48,8 +47,8 @@ calcular_tendencia <- function(beta, X){
   return(tendencia)
 }
 
-# Simula a série Xt = X %*% beta + eps, com eps_t ~ N(0, sigma²).
-# Entrada: beta (vetor com ncol(X) coeficientes), X (matriz n x p), sigma (desvio padrão).
+# Simula Xt = X %*% beta + eps, com eps_t ~ N(0, sigma²).
+# Entrada: beta com ncol(X) coeficientes, X como matriz n x p e sigma como desvio padrão.
 # Saída: vetor numérico de tamanho n.
 # Pré-condição: length(beta) == ncol(X) e sigma > 0.
 simular_serie_com_tendencia <- function(beta, X, sigma){
@@ -62,7 +61,6 @@ simular_serie_com_tendencia <- function(beta, X, sigma){
 
   Xt <- numeric(n)
 
-  # Para cada instante t, soma o ruído à tendência.
   for(t in 1:n){
     Xt[t] <- tendencia[t] + eps[t]
   }

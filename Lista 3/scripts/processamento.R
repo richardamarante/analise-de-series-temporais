@@ -1,11 +1,11 @@
 ############################################################
 # processamento.R
-# Calcula a média móvel, média amostral, autocovariâncias e FAC empírica.
+# Calcula média móvel centrada, média amostral, autocovariâncias e FAC empírica.
 # Dependências: nenhuma.
 ############################################################
 
-# Calcula a média móvel centrada: m_t = (1/(2q + 1)) * soma de X_j, de j = t-q até t+q.
-# Entrada: serie (vetor numérico de tamanho n), q (inteiro com 2q + 1 <= n).
+# Calcula a média móvel centrada pela média dos 2q + 1 valores de cada janela.
+# Entrada: serie numérica de tamanho n e q inteiro, com 2q + 1 <= n.
 # Saída: vetor de tamanho n - 2q, começando no centro t = q+1.
 # Pré-condição: serie sem NA.
 calcular_media_movel <- function(serie, q){
@@ -18,7 +18,6 @@ calcular_media_movel <- function(serie, q){
 
   if(numero_medias > 0){
 
-    # O loop percorre os centros das janelas, de q+1 até n-q.
     for(t in (q+1):(n-q)){
 
       soma <- 0
@@ -33,8 +32,8 @@ calcular_media_movel <- function(serie, q){
   return(medias)
 }
 
-# Calcula a média amostral pela soma dos valores dividida por n.
-# Entrada: serie (vetor numérico de tamanho n >= 1).
+# Calcula a média amostral somando os valores da série e dividindo por n.
+# Entrada: serie numérica de tamanho n >= 1.
 # Saída: um número.
 # Pré-condição: serie sem NA.
 calcular_media_amostral <- function(serie){
@@ -52,8 +51,8 @@ calcular_media_amostral <- function(serie){
   return(media)
 }
 
-# Calcula gamma(h) = (1/n) * soma de (X_t - média)(X_{t+h} - média), de t = 1 até n-h.
-# Entrada: serie (vetor numérico de tamanho n), h (inteiro com 0 <= h < n).
+# Calcula gamma(h) = (1/n) soma (X_t - media)(X_{t+h} - media), de t = 1 até n-h.
+# Entrada: serie numérica de tamanho n e h inteiro, com 0 <= h < n.
 # Saída: um número.
 # Pré-condição: serie sem NA.
 calcular_autocovariancia_empirica <- function(serie, h){
@@ -89,7 +88,7 @@ calcular_autocovariancia_empirica <- function(serie, h){
 }
 
 # Calcula as autocovariâncias de h = 0 até max_lag.
-# Entrada: serie (vetor numérico de tamanho n), max_lag (inteiro com 0 <= max_lag < n).
+# Entrada: serie numérica de tamanho n e max_lag inteiro, com 0 <= max_lag < n.
 # Saída: vetor de tamanho max_lag + 1, com gamma(h) na posição h+1.
 # Pré-condição: serie sem NA.
 calcular_autocovariancias <- function(serie, max_lag){
@@ -103,9 +102,9 @@ calcular_autocovariancias <- function(serie, max_lag){
   return(autocovariancias)
 }
 
-# Calcula a FAC empírica: rho(h) = gamma(h) / gamma(0).
-# Entrada: serie (vetor numérico de tamanho n), max_lag (inteiro com 0 <= max_lag < n).
-# Saída: vetor de tamanho max_lag + 1, com rho(0) = 1.
+# Calcula a FAC empírica por rho(h) = gamma(h)/gamma(0), com rho(0) = 1.
+# Entrada: serie numérica de tamanho n e max_lag inteiro, com 0 <= max_lag < n.
+# Saída: vetor de tamanho max_lag + 1.
 # Pré-condição: serie sem NA e não constante.
 calcular_fac_empirica <- function(serie, max_lag){
 

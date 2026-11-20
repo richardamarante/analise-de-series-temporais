@@ -1,6 +1,6 @@
 ############################################################
 # main.R
-# Coordena a configuração, simulação, média móvel, FAC e gráficos.
+# Coordena a configuração, simulação, média móvel, FAC e geração dos gráficos.
 # Dependências: scripts/config.R, scripts/dados.R, scripts/processamento.R e scripts/visualizacao.R.
 # Executar com a pasta da lista como diretório de trabalho.
 ############################################################
@@ -78,7 +78,6 @@ cat("FAE (autocorrelação empírica) para lags 0 a", max_lag, ":\n")
 
 print(round(fac_Xt, 4))
 
-# Compara a FAC calculada com a acf() do R.
 fac_R <- as.numeric(acf(Xt, lag.max = max_lag, plot = FALSE)$acf)
 
 cat("Maior diferença absoluta entre a FAC manual e a acf():",

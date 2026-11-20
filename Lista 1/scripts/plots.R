@@ -4,8 +4,6 @@
 # Dependências: pacote ggplot2.
 ############################################################
 
-# Define a paleta de cores dos gráficos.
-
 cor_principal <- "#37474F"
 cor_referencia <- "#C44E52"
 cor_trajetorias <- "#B0B0B0"
@@ -18,7 +16,7 @@ cor_janela_c1 <- "#000000"
 cor_janela_c2 <- "#5B8DB8"
 cor_cilindro <- "#E15759"
 
-# Define o tema usado em todos os gráficos.
+# Define o tema usado nos gráficos.
 # Entrada: nenhuma.
 # Saída: objeto theme do ggplot2.
 tema_graficos <- function(){
@@ -37,8 +35,8 @@ tema_graficos <- function(){
   )
 }
 
-# Ajusta os eixos com 2% de folga à direita no x e folga configurável no y.
-# Entrada: grafico (objeto ggplot) e folga_y_inferior (fração da amplitude, padrão 0.05).
+# Ajusta os eixos, deixando 2% de folga à direita no x e uma folga configurável no y.
+# Entrada: grafico, objeto ggplot, e folga_y_inferior, fração da amplitude com padrão 0.05.
 # Saída: objeto ggplot com os eixos ajustados.
 ajustar_eixos <- function(grafico, folga_y_inferior = 0.05){
   grafico <- grafico +
@@ -48,9 +46,9 @@ ajustar_eixos <- function(grafico, folga_y_inferior = 0.05){
   return(grafico)
 }
 
-# Salva um gráfico em PNG na pasta graficos/, se parametros$salvar_graficos for TRUE.
-# Entrada: grafico (objeto ggplot), nome_arquivo (caminho sem extensão) e parametros.
-# Saída: arquivo PNG com largura, altura e dpi definidos em parametros.
+# Salva um gráfico em PNG quando parametros$salvar_graficos é TRUE.
+# Entrada: grafico, objeto ggplot, nome_arquivo, caminho sem extensão, e parametros.
+# Saída: arquivo PNG em graficos/, com largura, altura e dpi definidos em parametros.
 salvar_grafico <- function(grafico, nome_arquivo, parametros){
   if(parametros$salvar_graficos){
     caminho <- paste0("graficos/", nome_arquivo, ".png")
@@ -67,8 +65,8 @@ salvar_grafico <- function(grafico, nome_arquivo, parametros){
   }
 }
 
-# Desenha uma série temporal com a linha de referência em mu = 0.
-# Entrada: serie (vetor numérico), titulo, ylab e rotulo_serie (textos).
+# Desenha uma série temporal com a referência mu = 0.
+# Entrada: serie, vetor numérico, e titulo, ylab e rotulo_serie, que são textos.
 # Saída: objeto ggplot.
 plot_serie_temporal <- function(serie,
                                  titulo,
@@ -113,8 +111,8 @@ plot_serie_temporal <- function(serie,
   return(grafico)
 }
 
-# Desenha o histograma com a densidade normal teórica N(0, sigma2).
-# Entrada: serie (vetor numérico), titulo, xlab e sigma2 (variância teórica).
+# Desenha um histograma com a densidade normal teórica N(0, sigma2).
+# Entrada: serie, vetor numérico, titulo e xlab, textos, e sigma2, variância teórica.
 # Saída: objeto ggplot.
 plot_histograma <- function(serie, titulo, xlab, sigma2){
 
@@ -152,14 +150,14 @@ plot_histograma <- function(serie, titulo, xlab, sigma2){
          y = "Densidade") +
     tema_graficos()
 
-  # Remove a folga inferior para as barras começarem no zero.
+  # Retira a folga inferior para as barras do histograma começarem no zero.
   grafico <- ajustar_eixos(grafico, folga_y_inferior = 0)
 
   return(grafico)
 }
 
-# Desenha a FAC amostral com limites de 95% em +-1,96/sqrt(n).
-# Entrada: serie (vetor numérico) e titulo (texto).
+# Desenha a FAC amostral com limites de 95% em ±1,96/sqrt(n).
+# Entrada: serie, vetor numérico, e titulo, texto.
 # Saída: objeto ggplot.
 plot_acf <- function(serie, titulo){
 
@@ -217,9 +215,9 @@ plot_acf <- function(serie, titulo){
   return(grafico)
 }
 
-# Converte a matriz de trajetórias para o formato longo do ggplot2.
-# Entrada: trajetorias (matriz n x m, uma coluna por trajetória).
-# Saída: data.frame com n*m linhas e colunas tempo, valor e trajetoria (fator).
+# Converte a matriz de trajetórias para o formato longo usado pelo ggplot2.
+# Entrada: trajetorias, matriz n x m com uma trajetória por coluna.
+# Saída: data.frame com n*m linhas e colunas tempo, valor e trajetoria, esta última como fator.
 matriz_para_df <- function(trajetorias){
   
   n <- nrow(trajetorias)
@@ -234,8 +232,8 @@ matriz_para_df <- function(trajetorias){
   return(dados)
 }
 
-# Desenha todas as trajetórias com a linha de referência em mu = 0.
-# Entrada: trajetorias (matriz n x m), titulo e ylab (textos).
+# Desenha as trajetórias com a referência mu = 0.
+# Entrada: trajetorias, matriz n x m, e titulo e ylab, que são textos.
 # Saída: objeto ggplot.
 plot_multiplas_trajetorias <- function(trajetorias, titulo,
                                        ylab = expression(X[t])){
@@ -276,8 +274,8 @@ plot_multiplas_trajetorias <- function(trajetorias, titulo,
 }
 
 # Desenha as trajetórias, a média amostral, a referência mu = 0 e o envelope opcional.
-# Entrada: trajetorias (matriz n x m), media (vetor n), titulo, ylab e rotulo_envelope (textos).
-# Entrada: envelope (vetor n com a meia largura do envelope ou NULL).
+# Entrada: trajetorias, matriz n x m, media, vetor n, titulo, ylab e rotulo_envelope, textos,
+# e envelope, vetor n com a meia largura do envelope ou NULL.
 # Saída: objeto ggplot.
 plot_trajetorias_media <- function(trajetorias, media, titulo,
                                    ylab = expression(X[t]),
@@ -320,7 +318,7 @@ plot_trajetorias_media <- function(trajetorias, media, titulo,
   )
   ordem <- c("Média Amostral", "μ = 0", "Trajetórias")
 
-  # Usa a mesma entrada na legenda para os dois limites do envelope.
+  # Usa uma única entrada na legenda para representar os dois limites do envelope.
   if(!is.null(envelope)){
     dados_envelope <- data.frame(
       tempo = 1:n,
@@ -361,8 +359,8 @@ plot_trajetorias_media <- function(trajetorias, media, titulo,
   return(grafico)
 }
 
-# Desenha a variância amostral em cada instante com uma referência opcional.
-# Entrada: variancia (vetor n), referencia (vetor n ou NULL), titulo, rotulo_referencia e ylab.
+# Desenha a variância amostral em cada instante, com uma referência opcional.
+# Entrada: variancia, vetor n, referencia, vetor n ou NULL, titulo, rotulo_referencia e ylab.
 # Saída: objeto ggplot.
 plot_variancia <- function(variancia, referencia = NULL, titulo,
                            rotulo_referencia = "Referência",
@@ -427,8 +425,8 @@ plot_variancia <- function(variancia, referencia = NULL, titulo,
 }
 
 # Desenha a covariância amostral entre t e t-1 com uma curva de referência.
-# Entrada: covariancia e referencia (vetores n), titulo, rotulo_referencia e ylab.
-# Saída: objeto ggplot, sem o primeiro instante.
+# Entrada: covariancia e referencia, vetores n, titulo, rotulo_referencia e ylab.
+# Saída: objeto ggplot sem o primeiro instante, que não tem covariância anterior.
 plot_covariancia <- function(covariancia,
                              referencia,
                              titulo,
@@ -472,9 +470,9 @@ plot_covariancia <- function(covariancia,
   return(grafico)
 }
 
-# Desenha as trajetórias com as pertencentes ao cilindro em destaque e suas janelas.
-# Entrada: trajetorias (matriz n x m), pertence_cilindro (vetor lógico de tamanho m).
-# Entrada: tempos_fix, limite_inferior e limite_superior (vetores das janelas).
+# Desenha as trajetórias, destacando as que pertencem ao cilindro e mostrando suas janelas.
+# Entrada: trajetorias, matriz n x m, e pertence_cilindro, vetor lógico de tamanho m.
+# Entrada: tempos_fix, limite_inferior e limite_superior, vetores que definem as janelas.
 # Saída: objeto ggplot.
 plot_cilindro <- function(trajetorias,
                           pertence_cilindro,
@@ -543,8 +541,8 @@ plot_cilindro <- function(trajetorias,
 }
 
 # Desenha as trajetórias com a interseção em destaque e as janelas dos dois cilindros lado a lado.
-# Entrada: trajetorias (matriz n x m), intersecao (vetor lógico de tamanho m).
-# Entrada: tempos1, inf1, sup1, tempos2, inf2 e sup2 (vetores das janelas).
+# Entrada: trajetorias, matriz n x m, e intersecao, vetor lógico de tamanho m.
+# Entrada: tempos1, inf1, sup1, tempos2, inf2 e sup2, vetores que definem as janelas.
 # Saída: objeto ggplot.
 plot_intersecao_cilindros <- function(trajetorias,
                                       intersecao,

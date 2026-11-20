@@ -1,11 +1,11 @@
 ############################################################
 # dados.R
-# Constrói matrizes de tendência, Fourier e dummies e simula o ruído e a série.
-# Dependências: nenhuma. Recebe os parâmetros por argumento.
+# Constrói as matrizes de tendência, Fourier e dummies, além de simular o ruído e a série.
+# Dependências: nenhuma, pois recebe os parâmetros por argumento.
 ############################################################
 
-# Cria a matriz de tendência: X[i,j+1] = t[i]^j, com j = 0, ..., grau.
-# Entrada: t (vetor n), grau (inteiro >= 0).
+# Cria a matriz de tendência com X[i,j+1] = t[i]^j, para j = 0, ..., grau.
+# Entrada: t é um vetor de tamanho n e grau é um inteiro >= 0.
 # Saída: matriz n x (grau + 1), com a primeira coluna igual a 1.
 criar_matriz_tendencia <- function(t, grau){
   
@@ -24,9 +24,10 @@ criar_matriz_tendencia <- function(t, grau){
   return(X)
 }
 
-# Cria a matriz de Fourier com cos(2 pi k t / periodo) e sen(2 pi k t / periodo).
-# Entrada: t (vetor n), periodo (inteiro >= 2), K (inteiro).
-# Saída: matriz n x 2K, com cosseno e seno de cada harmônico em sequência.
+# Cria a matriz de Fourier com pares de cos(2 pi k t / periodo) e sen(2 pi k t / periodo),
+# colocando o cosseno antes do seno em cada harmônico.
+# Entrada: t é um vetor de tamanho n, periodo é um inteiro >= 2 e K é um inteiro.
+# Saída: matriz n x 2K.
 # Pré-condição: K < periodo / 2, para evitar uma coluna de seno nula.
 criar_matriz_fourier <- function(t, periodo, K){
   
@@ -51,9 +52,9 @@ criar_matriz_fourier <- function(t, periodo, K){
   return(X)
 }
 
-# Cria dummies sazonais: a coluna m - 1 vale 1 no mês m, com m = 2, ..., periodo.
-# Entrada: t (vetor de inteiros), periodo (inteiro >= 2).
-# Saída: matriz n x (periodo - 1), com o mês 1 como referência.
+# Cria as dummies sazonais, em que cada coluna indica um mês e o mês 1 fica no intercepto.
+# Entrada: t é um vetor de inteiros e periodo é um inteiro >= 2.
+# Saída: matriz n x (periodo - 1), com uma coluna para cada mês de 2 até periodo.
 criar_matriz_dummies <- function(t, periodo){
   
   n <- length(t)
@@ -77,8 +78,8 @@ criar_matriz_dummies <- function(t, periodo){
   return(X)
 }
 
-# Simula ruído branco independente: eps_t ~ N(0, sigma²).
-# Entrada: n (inteiro positivo), sigma (numérico > 0).
+# Simula n observações independentes de ruído branco com eps_t ~ N(0, sigma²).
+# Entrada: n é um inteiro positivo e sigma é um número > 0.
 # Saída: vetor eps de tamanho n.
 simular_ruido_branco <- function(n, sigma){
   
@@ -93,9 +94,11 @@ simular_ruido_branco <- function(n, sigma){
 }
 
 # Simula Xt = X_tendencia beta_tendencia + X_sazonal beta_sazonal + eps.
-# Entrada: beta_tendencia, X_tendencia, X_sazonal, beta_sazonal e sigma.
+# Entrada: beta_tendencia e beta_sazonal contêm os coeficientes, X_tendencia
+# e X_sazonal são as matrizes correspondentes e sigma é o desvio padrão do ruído.
 # Saída: vetor Xt de tamanho n.
-# Pré-condição: matrizes com n linhas e número de colunas igual ao tamanho de cada beta.
+# Pré-condição: as matrizes devem ter n linhas e cada uma deve ter tantas colunas
+# quanto o tamanho do respectivo vetor de coeficientes.
 simular_serie <- function(beta_tendencia,
                           X_tendencia,
                           X_sazonal,

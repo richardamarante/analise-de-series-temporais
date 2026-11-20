@@ -14,7 +14,7 @@ Lista 4/
 │   ├── processamento.R    OLS, diagnóstico, testes e previsão
 │   └── visualizacao.R     Gráficos e exportação
 ├── ex1_implementacao_procedural.R
-├── ex4_eficiencia.R      Usa config.R, dados.R e processamento.R
+├── ex4_eficiencia.R       Usa config.R, dados.R e processamento.R
 └── graficos/
     ├── decomposicao/
     ├── previsao/
@@ -30,7 +30,8 @@ Lista 4/
 2. `main.R` passa `y`, `X_tendencia` e `X_sazonal` para `ajustar_modelo()`. A matriz $X=[X_{tendencia}\mid X_{sazonal}]$ tem 120 × 7 no Fourier e 120 × 14 nas dummies.
 3. `ajustar_ols()` resolve $\hat\beta=(X'X)^{-1}X'y$ com `solve(XtX, Xty)`. `calcular_XtX()` e `calcular_Xty()` obtêm os produtos com loops; `multiplicar_matriz_vetor()` calcula os valores ajustados.
 4. `ajustar_modelo()` devolve coeficientes, tendência, sazonalidade, ajustados, resíduos e matriz completa. Essas saídas alimentam os diagnósticos e `teste_t_coeficientes()`, além do teste de Box-Pierce.
-5. `prever(modelo, X_tendencia_futuro, X_sazonal_futuro)` calcula $t=121:132$; as previsões são comparadas por RMSE com o sinal verdadeiro sem ruído. Os resultados seguem para console e gráficos.
+5. Na divisão temporal, $t=1:72$ é treino, $t=73:96$ é validação e $t=97:120$ é teste; os modelos são ajustados no treino, avaliados por `avaliar_previsao()` na validação para escolher o menor RMSE e reajustados com treino e validação antes do teste.
+6. `prever(modelo, X_tendencia_futuro, X_sazonal_futuro)` calcula $t=121:132$; as previsões são comparadas por RMSE com o sinal verdadeiro sem ruído. Os resultados seguem para console e gráficos.
 
 ## 3.2 (c) Sequência procedural de chamadas
 
@@ -38,9 +39,10 @@ Lista 4/
 2. Cria tempo, matrizes, ruído, série e componentes verdadeiros; calcula média amostral e média móvel centrada.
 3. Chama `ajustar_modelo()` para Fourier e dummies; compara os coeficientes com `lm()`.
 4. Calcula os diagnósticos, os testes t e de Box-Pierce e a FAC dos resíduos.
-5. Constrói matrizes futuras, chama `prever()` e calcula o RMSE fora da amostra.
-6. Chama as funções de `visualizacao.R`, apresenta os resultados e salva dez PNGs em `graficos/`.
-7. Separadamente, `ex4_eficiencia.R` compara loops, `crossprod()` e `%*%`, valida com `all.equal()`, mede tempos com `system.time()` e salva o gráfico de eficiência.
+5. Divide a série em treino, validação e teste, ajusta os dois métodos no treino, escolhe Fourier pelo RMSE da validação e reajusta ambos com treino e validação para avaliar o teste uma única vez, calculando RMSE, MAE e R².
+6. Constrói matrizes futuras, chama `prever()` e calcula o RMSE fora da amostra.
+7. Chama as funções de `visualizacao.R`, apresenta os resultados e salva 12 PNGs em `graficos/`.
+8. Separadamente, `ex4_eficiencia.R` compara loops, `crossprod()` e `%*%`, valida com `all.equal()`, mede tempos com `system.time()` e salva o gráfico de eficiência.
 
 ## 3.3 Por que é procedural
 

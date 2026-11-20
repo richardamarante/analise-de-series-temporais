@@ -1,19 +1,18 @@
 ############################################################
 # processamento.R
-# Calcula média, autocovariâncias e FAC empírica e teórica do AR(1).
+# Calcula média, autocovariâncias e FAC empírica, além da FAC teórica do AR(1).
 # Dependências: nenhuma. Não gera gráficos.
 ############################################################
 
-# Calcula a média empírica: soma dos valores dividida por n.
-# Entrada: serie (vetor numérico de tamanho n, sem NA).
-# Saída: Número com a média.
+# Calcula a média empírica somando os valores da série e dividindo por n.
+# Entrada: serie é um vetor numérico de tamanho n, sem NA.
+# Saída: número com a média empírica.
 calcular_media_empirica <- function(serie){
 
   n <- length(serie)
 
   soma <- 0
 
-  # Acumula os n valores da série em soma.
   for(t in 1:n){
 
     soma <- soma + serie[t]
@@ -24,9 +23,9 @@ calcular_media_empirica <- function(serie){
   return(media)
 }
 
-# Calcula gamma(h) = (1/n) * soma_{t=1}^{n-h} (X_t - média)(X_{t+h} - média).
-# Entrada: serie (vetor numérico de tamanho n, sem NA), h (inteiro, 0 <= h < n).
-# Saída: Número com gamma(h).
+# Calcula gamma(h) = (1/n) * soma_{t=1}^{n-h} (X_t - media)(X_{t+h} - media).
+# Entrada: serie é um vetor numérico de tamanho n, sem NA, e h é um inteiro com 0 <= h < n.
+# Saída: número com a autocovariância gamma(h).
 calcular_autocovariancia_empirica <- function(serie, h){
 
   n <- length(serie)
@@ -37,7 +36,7 @@ calcular_autocovariancia_empirica <- function(serie, h){
 
   if(h == 0){
 
-    # Para h = 0, soma os desvios ao quadrado para calcular a variância.
+    # Em h = 0, os dois desvios são iguais e a soma dos quadrados, dividida por n, dá a variância.
     for(t in 1:n){
 
       d <- serie[t] - media
@@ -47,7 +46,7 @@ calcular_autocovariancia_empirica <- function(serie, h){
 
   } else {
 
-    # Multiplica os desvios de X_t e X_{t+h} até t = n-h, sem ultrapassar o fim da série.
+    # Percorre até t = n-h para que o segundo índice, t+h, não ultrapasse o tamanho da série.
     for(t in 1:(n-h)){
 
       d1 <- serie[t] - media
@@ -63,14 +62,14 @@ calcular_autocovariancia_empirica <- function(serie, h){
   return(autocovariancia)
 }
 
-# Calcula as autocovariâncias dos lags 0 até max_lag.
-# Entrada: serie (vetor numérico de tamanho n), max_lag (inteiro, 0 <= max_lag < n).
-# Saída: Vetor de tamanho max_lag + 1, com gamma(h) na posição h+1.
+# Calcula as autocovariâncias para todos os lags de 0 até max_lag.
+# Entrada: serie é um vetor numérico de tamanho n e max_lag é um inteiro com 0 <= max_lag < n.
+# Saída: vetor de tamanho max_lag + 1, com gamma(h) na posição h+1.
 calcular_autocovariancias <- function(serie, max_lag){
 
   autocovariancias <- numeric(max_lag + 1)
 
-  # Guarda gamma(h) na posição h+1 porque o R começa a indexar em 1.
+  # Guarda gamma(h) na posição h+1 porque os índices dos vetores em R começam em 1.
   for(h in 0:max_lag){
 
     autocovariancias[h+1] <-
@@ -80,9 +79,10 @@ calcular_autocovariancias <- function(serie, max_lag){
   return(autocovariancias)
 }
 
-# Calcula a FAC empírica: rho(h) = gamma(h) / gamma(0).
-# Entrada: serie (vetor numérico de tamanho n, não constante), max_lag (inteiro, 0 <= max_lag < n).
-# Saída: Vetor de tamanho max_lag + 1, com rho(h) na posição h+1 e rho(0) = 1.
+# Calcula a FAC empírica dividindo as autocovariâncias por gamma(0), com rho(0) = 1.
+# Entrada: serie é um vetor numérico não constante de tamanho n e max_lag é um inteiro
+# com 0 <= max_lag < n.
+# Saída: vetor de tamanho max_lag + 1, com rho(h) na posição h+1.
 calcular_fac_empirica <- function(serie, max_lag){
 
   autocovariancias <-
@@ -106,9 +106,9 @@ calcular_fac_empirica <- function(serie, max_lag){
   return(fac)
 }
 
-# Calcula a FAC teórica do AR(1): rho(h) = phi^h.
-# Entrada: phi (número com |phi| < 1), max_lag (inteiro >= 0).
-# Saída: Vetor de tamanho max_lag + 1 com phi^0, ..., phi^max_lag.
+# Calcula a FAC teórica do AR(1), usando rho(h) = phi^h para cada lag.
+# Entrada: phi é um número com |phi| < 1 e max_lag é um inteiro >= 0.
+# Saída: vetor de tamanho max_lag + 1, com phi^0, ..., phi^max_lag.
 calcular_fac_teorica_ar1 <- function(phi, max_lag){
 
   fac_teorica <- numeric(max_lag + 1)

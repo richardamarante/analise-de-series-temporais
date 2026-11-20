@@ -14,9 +14,9 @@ $$X_t=\beta_0+\beta_1t+\beta_2t^2+\sum_{k=1}^{K}\left[\alpha_k\cos(2\pi kt/s)+b_
 | `parametros.json` | 2 | parâmetros da simulação, dos gráficos e da eficiência |
 | `scripts/config.R` | 2 | `ler_parametros()`, semente e vetores de tempo e coeficientes |
 | `scripts/dados.R` | 2 | matrizes de tendência, Fourier e dummies; simulação |
-| `scripts/processamento.R` | 2 | média móvel, OLS, diagnósticos, testes e previsão |
+| `scripts/processamento.R` | 2 | média móvel, OLS, diagnósticos, testes, avaliação e previsão |
 | `scripts/visualizacao.R` | 2 e 4 | gráficos, tema e exportação por `salvar_grafico()` |
-| `main.R` | 3 | execução das etapas e geração de dez gráficos |
+| `main.R` | 3 | execução das etapas e geração de 12 gráficos |
 | `ex4_eficiencia.R` | 4 | validação com `lm()`, tempos e gráfico de eficiência |
 | `README.md` | | execução e resultados |
 | `modelagem.md` | 3 | arquitetura, fluxo, chamadas e paradigma procedural |
@@ -33,9 +33,9 @@ source("main.R")
 source("ex4_eficiencia.R")
 ```
 
-O Exercício 1 roda separadamente com `source("ex1_implementacao_procedural.R")`. O `main.R` mostra os resultados e salva dez PNGs; `ex4_eficiencia.R` salva mais um.
+O Exercício 1 roda separadamente com `source("ex1_implementacao_procedural.R")`. O `main.R` mostra os resultados e salva 12 PNGs; `ex4_eficiencia.R` salva mais um.
 
-Em `parametros.json`: `seed = 42`, `n_anos = 10`, `s = 12`, `sigma = 5`, `grau_tendencia = 2`, `beta_tendencia = (2, 0.05, 0.001)`, `alpha = (2, 1)`, `beta_h = (-1, 0.5)`, `K = 2`, `q = 5`, `max_lag_box = 12`, `n_futuro = 12`, `n_eficiencia = 200000` e `repeticoes_eficiencia = 10`. São 120 observações, variância do ruído 25 e média móvel centrada de 11 pontos. O arquivo também define `n_grafico_eficiencia`.
+Em `parametros.json`: `seed = 42`, `n_anos = 10`, `s = 12`, `sigma = 5`, `grau_tendencia = 2`, `beta_tendencia = (2, 0.05, 0.001)`, `alpha = (2, 1)`, `beta_h = (-1, 0.5)`, `K = 2`, `q = 5`, `max_lag_box = 12`, `n_futuro = 12`, `n_eficiencia = 200000` e `repeticoes_eficiencia = 10`. São 120 observações, variância do ruído 25 e média móvel centrada de 11 pontos. O arquivo também define `n_grafico_eficiencia`, `proporcao_treino` e `proporcao_validacao`.
 
 ## Validação dos resultados
 
@@ -65,6 +65,21 @@ As dummies ajustaram melhor a amostra, com mais parâmetros; Fourier previu melh
 
 Os coeficientes manuais e de `lm()` tiveram maior diferença arredondada a quatro casas igual a 0. `all.equal()` retornou `TRUE` para coeficientes e valores ajustados.
 
+## Treino, validação e teste
+
+A série foi dividida por data, sem embaralhamento, em treino (60%, $t=1:72$), validação (20%, $t=73:96$) e teste (20%, $t=97:120$). Fourier e dummies foram ajustados no treino e avaliados na validação, que definiu o método com menor RMSE. Depois, os dois modelos foram reajustados com treino e validação para prever o teste, usado apenas após a escolha. A função `avaliar_previsao()` calcula RMSE, MAE e R² com loops, usando a média dos dados de ajuste como referência para o R².
+
+| Conjunto | Método | RMSE | MAE | R² |
+|---|---|---:|---:|---:|
+| Treino | Fourier | 5.2815 | 4.0663 | 0.3270 |
+| Treino | Dummies | 5.0465 | 3.9275 | 0.3856 |
+| Validação | Fourier | 7.5578 | 6.1116 | 0.3469 |
+| Validação | Dummies | 7.6130 | 5.8367 | 0.3373 |
+| Teste | Fourier | 6.3061 | 5.4237 | 0.7407 |
+| Teste | Dummies | 6.3688 | 5.4176 | 0.7355 |
+
+Dummies teve menor RMSE no treino, mas Fourier foi escolhido pelo menor RMSE na validação (7.5578 contra 7.6130) e também apresentou menor RMSE no teste (6.3061 contra 6.3688). Os gráficos `02_previsao_validacao_teste.png` e `03_rmse_treino_validacao_teste.png`, em `graficos/previsao/`, mostram os cortes temporais com as previsões e os RMSEs por método e conjunto.
+
 ## Análise de eficiência (Exercício 4.3)
 
 `calcular_XtX()` usa três loops, com custo aproximado $np^2$; `calcular_Xty()` e `multiplicar_matriz_vetor()` usam dois, com custo $np$. O `ex4_eficiencia.R` compara os loops com `crossprod()`, `t(X) %*% X`, `t(X) %*% y` e `X %*% beta`, mantendo `solve()` no OLS.
@@ -81,9 +96,9 @@ Os tempos são de dez repetições com matriz de 200000 × 7. As cinco comparaç
 
 ## Gráficos e ggplot2 (Exercício 4.2)
 
-O ggplot2 padroniza tema e eixos com `tema_graficos()` e `ajustar_eixos()`. `plot_decomposicao()` usa `facet_wrap()` para mostrar série, tendência, sazonalidade e resíduos em quatro painéis; os outros gráficos comparam ajustes, previsões, FAC e tempos. `salvar_grafico()` exporta os 11 PNGs com `ggsave()`, 300 dpi, dimensões 10 × 12 na decomposição e 10 × 6 nos demais.
+O ggplot2 padroniza tema e eixos com `tema_graficos()` e `ajustar_eixos()`. `plot_decomposicao()` usa `facet_wrap()` para mostrar série, tendência, sazonalidade e resíduos em quatro painéis; os outros gráficos comparam ajustes, previsões, FAC e tempos. `salvar_grafico()` exporta os 13 PNGs com `ggsave()`, 300 dpi, dimensões 10 × 12 na decomposição e 10 × 6 nos demais.
 
 - `graficos/decomposicao/`: `01_decomposicao_aditiva.png`, `02_serie_observada_ajustada.png`, `03_tendencia_estimada_real.png`, `04_sazonalidade_estimada_real.png`, `05_serie_media_movel_tendencia.png`, `06_sazonalidade_mensal_fourier_dummies.png`.
-- `graficos/previsao/`: `01_previsao_fora_amostra.png`.
+- `graficos/previsao/`: `01_previsao_fora_amostra.png`, `02_previsao_validacao_teste.png`, `03_rmse_treino_validacao_teste.png`.
 - `graficos/residuos/`: `01_serie_temporal_residuos.png`, `02_funcao_autocorrelacao_residuos.png`, `03_histograma_residuos.png`.
 - `graficos/eficiencia/`: `01_tempo_loop_vetorizada.png`.

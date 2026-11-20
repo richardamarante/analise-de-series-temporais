@@ -1,7 +1,7 @@
 ############################################################
 # ex4_eficiencia.R
-# Compara loops e versões vetorizadas do passeio aleatório e das autocovariâncias.
-# Mostra os resultados no console e o tempo em função de n em um gráfico.
+# Compara os tempos e resultados das versões com loops e vetorizadas do passeio aleatório
+# e das autocovariâncias, além de mostrar o tempo em função de n em um gráfico.
 # Dependências: config.R, dados.R, processamento.R, visualizacao.R e ggplot2.
 # Execução: usar a pasta da lista como diretório de trabalho.
 ############################################################
@@ -16,21 +16,21 @@ source("scripts/dados.R")
 source("scripts/processamento.R")
 source("scripts/visualizacao.R")
 
-# Calcula as autocovariâncias de 0 até max_lag sem loop interno sobre t.
-# Entrada: serie (vetor numérico de tamanho n), max_lag (inteiro, 0 <= max_lag < n).
-# Saída: Vetor de tamanho max_lag + 1 com gamma(0), ..., gamma(max_lag).
+# Calcula as autocovariâncias de 0 até max_lag, usando operações vetorizadas no lugar do loop sobre t.
+# Entrada: serie é um vetor numérico de tamanho n e max_lag é um inteiro com 0 <= max_lag < n.
+# Saída: vetor de tamanho max_lag + 1, com gamma(0), ..., gamma(max_lag).
 calcular_autocovariancias_vetorizada <- function(serie, max_lag){
 
   n <- length(serie)
 
-  # Calcula os desvios uma vez, sem repetir a média em cada lag.
+  # Calcula os desvios uma única vez para não repetir a subtração da média em cada lag.
   d <- serie - mean(serie)
 
   autocovariancias <- numeric(max_lag + 1)
 
-  # Os trechos d[1:(n-h)] e d[(h+1):n] são os desvios separados por h posições.
-  # O produto elemento a elemento e sum() substituem o loop sobre t.
-  # Com h = 0, os trechos coincidem e a soma dos quadrados dá a variância.
+  # Para cada h, seleciona dois trechos dos desvios separados por h posições e usa sum() sobre
+  # o produto elemento a elemento, substituindo o loop sobre t. Em h = 0, os trechos coincidem
+  # e a soma dos quadrados, dividida por n, fornece a variância.
   for(h in 0:max_lag){
     autocovariancias[h+1] <- sum(d[1:(n-h)] * d[(1+h):n]) / n
   }
@@ -38,9 +38,10 @@ calcular_autocovariancias_vetorizada <- function(serie, max_lag){
   return(autocovariancias)
 }
 
-# Calcula a FAC empírica a partir das autocovariâncias vetorizadas.
-# Entrada: serie (vetor numérico de tamanho n, não constante), max_lag (inteiro, 0 <= max_lag < n).
-# Saída: Vetor de tamanho max_lag + 1 com rho(0), ..., rho(max_lag).
+# Calcula a FAC empírica a partir das autocovariâncias vetorizadas, dividindo por gamma(0).
+# Entrada: serie é um vetor numérico não constante de tamanho n e max_lag é um inteiro
+# com 0 <= max_lag < n.
+# Saída: vetor de tamanho max_lag + 1, com rho(0), ..., rho(max_lag).
 calcular_fac_empirica_vetorizada <- function(serie, max_lag){
 
   autocovariancias <- calcular_autocovariancias_vetorizada(serie, max_lag)
@@ -48,19 +49,18 @@ calcular_fac_empirica_vetorizada <- function(serie, max_lag){
   return(autocovariancias / autocovariancias[1])
 }
 
-# Mede o tempo decorrido na execução de uma expressão com Sys.time().
-# Entrada: expressao (código R avaliado dentro da função).
-# Saída: Tempo decorrido em segundos.
+# Mede o tempo decorrido durante a avaliação de uma expressão usando Sys.time().
+# Entrada: expressao é o código R que será avaliado dentro da função.
+# Saída: tempo decorrido em segundos.
 medir_tempo <- function(expressao){
 
-  # Executa gc() antes da medição para evitar a coleta de lixo durante o cronômetro.
+  # Executa gc() antes da medição para reduzir a chance de coleta de lixo durante o cronômetro.
   gc()
 
-  # Usa Sys.time() porque system.time() tem resolução de cerca de 0,016 s no Windows.
-  # As repetições de cumsum são mais rápidas e podem aparecer como tempo zero.
+  # Usa Sys.time() porque as repetições de cumsum() podem ser rápidas o suficiente para aparecer
+  # com tempo zero na resolução de cerca de 0,016 s de system.time() no Windows.
   inicio <- Sys.time()
 
-  # A expressão é avaliada aqui, entre as duas leituras do relógio.
   expressao
 
   fim <- Sys.time()
@@ -68,9 +68,9 @@ medir_tempo <- function(expressao){
   return(as.numeric(difftime(fim, inicio, units = "secs")))
 }
 
-# Compara tempos e resultados das versões com loop e vetorizadas, sem incluir o AR(1) recursivo.
-# Entrada: parametros (lista com seed, sigma2, max_lag, n_eficiencia e repeticoes_eficiencia).
-# Saída: Imprime as comparações no console.
+# Compara os tempos e resultados das versões com loops e vetorizadas, sem incluir o AR(1) recursivo.
+# Entrada: parametros é uma lista com seed, sigma2, max_lag, n_eficiencia e repeticoes_eficiencia.
+# Saída: tempos e comparações dos resultados impressos no console.
 # Pré-condição: config.R, dados.R e processamento.R carregados.
 comparar_eficiencia <- function(parametros){
 
@@ -83,16 +83,15 @@ comparar_eficiencia <- function(parametros){
   cat("max_lag:", max_lag, "\n")
   cat("repetições:", repeticoes, "\n")
 
-  # Sorteia os choques uma vez, fora do cronômetro, para as duas versões usarem o mesmo eps.
+  # Sorteia os choques fora do cronômetro e fixa a semente para que as versões usem o mesmo eps.
   fixar_semente(parametros)
   eps <- simular_ruido_branco(n, sigma2)
 
   x_loop <- acumular_passeio_aleatorio(eps)
 
-  # cumsum() calcula em código compilado a mesma soma acumulada do loop.
   x_vet <- cumsum(eps)
 
-  # Cronometra apenas o acúmulo dos choques, sem incluir rnorm().
+  # Repete o acúmulo dos mesmos choques para medir apenas o loop, sem incluir o sorteio de rnorm().
   tempo_loop <- medir_tempo(for(r in 1:repeticoes) acumular_passeio_aleatorio(eps))
   tempo_vet <- medir_tempo(for(r in 1:repeticoes) cumsum(eps))
 
@@ -101,15 +100,13 @@ comparar_eficiencia <- function(parametros){
   cat("Tempo do cumsum (s):", round(tempo_vet, 4), "\n")
   cat("Razão loop / cumsum:", round(tempo_loop / tempo_vet, 3), "\n")
 
-  # cumsum() usa precisão estendida (long double) e o loop usa double.
-  # all.equal() compara com tolerância, pois os resultados podem diferir nas últimas casas decimais.
+  # Como cumsum() pode usar precisão estendida (long double) e o loop usa double, os resultados
+  # podem diferir nas últimas casas decimais, então all.equal() faz a comparação com tolerância.
   cat("Mesmo resultado nas duas versões (all.equal):", isTRUE(all.equal(x_loop, x_vet)), "\n")
   cat("Maior diferença absoluta entre as séries:", signif(max(abs(x_loop - x_vet)), 3), "\n")
 
-  # Divide a maior diferença absoluta pelo maior módulo de x_loop para obter a diferença relativa.
   cat("Maior diferença relativa:", signif(max(abs(x_loop - x_vet)) / max(abs(x_loop)), 3), "\n")
 
-  # Usa a mesma série para calcular as autocovariâncias nas duas versões.
   serie <- x_vet
 
   gama_loop <- calcular_autocovariancias(serie, max_lag)
@@ -125,21 +122,20 @@ comparar_eficiencia <- function(parametros){
   cat("Mesmo resultado nas duas versões (all.equal):", isTRUE(all.equal(gama_loop, gama_vet)), "\n")
   cat("Maior diferença absoluta entre as autocovariâncias:", signif(max(abs(gama_loop - gama_vet)), 3), "\n")
 
-  # Divide a maior diferença absoluta pelo maior módulo de gama_loop para comparar o erro relativo.
   cat("Maior diferença relativa:", signif(max(abs(gama_loop - gama_vet)) / max(abs(gama_loop)), 3), "\n")
 
   fac_loop <- calcular_fac_empirica(serie, max_lag)
   fac_vet <- calcular_fac_empirica_vetorizada(serie, max_lag)
 
-  # A FAC fica entre -1 e 1, com rho(0) = 1, então a diferença absoluta já mostra o erro nessa escala.
   cat("\nFAC empírica\n")
   cat("Mesmo resultado nas duas versões (all.equal):", isTRUE(all.equal(fac_loop, fac_vet)), "\n")
   cat("Maior diferença absoluta entre as FACs:", signif(max(abs(fac_loop - fac_vet)), 3), "\n")
 }
 
-# Mede o tempo do loop e da versão vetorizada para cada n e cada cálculo.
-# Entrada: parametros (lista com seed, sigma2, max_lag, repeticoes_eficiencia e n_grafico_eficiencia).
-# Saída: data.frame com n, calculo, versao e tempo, uma linha por medição.
+# Mede os tempos das duas versões para cada valor de n, separando os cálculos comparados.
+# Entrada: parametros é uma lista com seed, sigma2, max_lag, repeticoes_eficiencia
+# e n_grafico_eficiencia.
+# Saída: data.frame com n, calculo, versao e tempo, com uma linha por medição.
 # Pré-condição: config.R, dados.R e processamento.R carregados.
 medir_tempos_por_n <- function(parametros){
 
@@ -151,7 +147,7 @@ medir_tempos_por_n <- function(parametros){
 
   for(n in parametros$n_grafico_eficiencia){
 
-    # Sorteia os choques fora do cronômetro e usa o mesmo passeio nas autocovariâncias.
+    # Sorteia os choques fora do cronômetro e usa o mesmo passeio na comparação das autocovariâncias.
     fixar_semente(parametros)
     eps <- simular_ruido_branco(n, sigma2)
     serie <- cumsum(eps)
@@ -173,13 +169,14 @@ medir_tempos_por_n <- function(parametros){
   return(tempos)
 }
 
-# Mostra o tempo em função de n, com uma linha por versão e um painel por cálculo.
-# Entrada: tempos (data.frame com n, calculo, versao e tempo), titulo (texto), repeticoes (inteiro).
-# Saída: Objeto ggplot.
+# Mostra o tempo em função de n, com uma linha por versão e um painel para cada cálculo.
+# Entrada: tempos é um data.frame com n, calculo, versao e tempo, titulo é um texto
+# e repeticoes é o número de repetições.
+# Saída: objeto ggplot.
 # Pré-condição: ggplot2 e visualizacao.R carregados.
 plot_tempo_eficiencia <- function(tempos, titulo, repeticoes){
 
-  # Mantém os painéis na ordem do console: soma acumulada e autocovariâncias.
+  # Mantém os painéis na ordem do console, começando pela soma acumulada e depois autocovariâncias.
   tempos$calculo <- factor(tempos$calculo, levels = unique(tempos$calculo))
 
   grafico <- ggplot(tempos,
@@ -188,7 +185,7 @@ plot_tempo_eficiencia <- function(tempos, titulo, repeticoes){
                         color = versao)) +
     geom_line(linewidth = 0.9) +
     geom_point(size = 2.4) +
-    # Usa uma escala vertical por painel, pois as autocovariâncias levam mais tempo.
+    # Usa escalas verticais independentes porque o cálculo das autocovariâncias leva mais tempo.
     facet_wrap(~ calculo, scales = "free_y") +
     scale_color_manual(
       values = c("Loop for" = cor_referencia, "Vetorizada" = cor_acf),

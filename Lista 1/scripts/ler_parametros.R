@@ -5,7 +5,7 @@
 ############################################################
 
 # Lê os parâmetros de um arquivo JSON.
-# Entrada: arquivo (caminho do JSON, como "parametros.json").
+# Entrada: arquivo, caminho do JSON, como "parametros.json".
 # Saída: lista com os parâmetros do arquivo.
 ler_parametros <- function(arquivo){
   parametros <- fromJSON(arquivo)

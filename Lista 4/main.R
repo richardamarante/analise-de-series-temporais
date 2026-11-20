@@ -1,6 +1,6 @@
 ############################################################
 # main.R
-# Coordena configuração, simulação, OLS, diagnóstico, previsão e gráficos.
+# Coordena a simulação, o ajuste OLS, o diagnóstico, as previsões e os gráficos.
 # Dependências: parametros.json e scripts/config.R, dados.R, processamento.R e visualizacao.R.
 ############################################################
 
@@ -41,7 +41,6 @@ beta_sazonal <- criar_beta_sazonal(parametros$alpha, parametros$beta_h, K)
 
 imprimir_titulo_console("SIMULAÇÃO DA SÉRIE")
 
-# Matrizes de regressores, usadas no ajuste e na previsão.
 X_tendencia <- criar_matriz_tendencia(t, grau_tendencia)
 X_fourier <- criar_matriz_fourier(t, s, K)
 X_dummies <- criar_matriz_dummies(t, s)
@@ -52,7 +51,6 @@ Xt <- simular_serie(beta_tendencia = beta_tendencia,
                     beta_sazonal = beta_sazonal,
                     sigma = sigma)
 
-# Componentes verdadeiros, para comparar com os estimados.
 tendencia_real <- multiplicar_matriz_vetor(X_tendencia, beta_tendencia)
 sazonalidade_real <- multiplicar_matriz_vetor(X_fourier, beta_sazonal)
 
@@ -105,7 +103,8 @@ cat("RMSE (Dummies):", round(diagnostico_dummies$rmse, 4), "\n")
 cat("R² (Fourier):", round(diagnostico_fourier$r2, 4), "\n")
 cat("R² (Dummies):", round(diagnostico_dummies$r2, 4), "\n")
 
-# Efeito de cada mês, com média zero no ano, para comparar Fourier e dummies.
+# Centraliza os efeitos mensais para terem média zero no ano, permitindo comparar
+# a sazonalidade verdadeira com as estimativas de Fourier e dummies.
 sazonalidade_mensal_real <- calcular_sazonalidade_mensal(t, sazonalidade_real, s)
 sazonalidade_mensal_fourier <- calcular_sazonalidade_mensal(t, modelo$sazonalidade, s)
 sazonalidade_mensal_dummies <- calcular_sazonalidade_mensal(t, modelo_dummies$sazonalidade, s)
@@ -151,7 +150,7 @@ imprimir_titulo_console("PREVISÃO")
 
 t_futuro <- (n + 1):(n + parametros$n_futuro)
 
-# Matrizes futuras com as mesmas colunas do ajuste.
+# Mantém nas matrizes futuras as mesmas colunas e a mesma ordem usadas no ajuste.
 X_tendencia_futuro <- criar_matriz_tendencia(t_futuro, grau_tendencia)
 X_fourier_futuro <- criar_matriz_fourier(t_futuro, s, K)
 X_dummies_futuro <- criar_matriz_dummies(t_futuro, s)
@@ -178,7 +177,8 @@ rmse_previsao_dummies <- diagnostico(y = sinal_futuro,
 cat("RMSE da previsão (Fourier):", round(rmse_previsao_fourier, 4), "\n")
 cat("RMSE da previsão (Dummies):", round(rmse_previsao_dummies, 4), "\n")
 
-# Divisão por data para a validação fora da amostra: 60% treino, 20% validação e 20% teste.
+# Divide a série em ordem cronológica, com 60% para treino, 20% para validação
+# e 20% para teste, sem misturar observações de períodos diferentes.
 imprimir_titulo_console("TREINO, VALIDAÇÃO E TESTE")
 
 n_treino <- round(parametros$proporcao_treino * n)
@@ -196,27 +196,27 @@ cat("Teste: t =", t_teste[1], "a", n, "\n")
 media_treino <- calcular_media_amostral(Xt[t_treino])
 media_ajuste_final <- calcular_media_amostral(Xt[t_ajuste_final])
 
-# Matrizes de tendência de cada trecho.
 X_tendencia_treino <- criar_matriz_tendencia(t_treino, grau_tendencia)
 X_tendencia_validacao <- criar_matriz_tendencia(t_validacao, grau_tendencia)
 X_tendencia_ajuste_final <- criar_matriz_tendencia(t_ajuste_final, grau_tendencia)
 X_tendencia_teste <- criar_matriz_tendencia(t_teste, grau_tendencia)
 
-# Fourier: ajusta no treino e prevê a validação; depois reajusta com treino e validação e prevê o teste.
+# Ajusta Fourier no treino para prever a validação e depois reajusta com treino
+# e validação para prever o teste, sem usar os dados de teste no ajuste.
 modelo_treino_fourier <- ajustar_modelo(Xt[t_treino], X_tendencia_treino, criar_matriz_fourier(t_treino, s, K))
 previsao_validacao_fourier <- prever(modelo_treino_fourier, X_tendencia_validacao, criar_matriz_fourier(t_validacao, s, K))
 
 modelo_final_fourier <- ajustar_modelo(Xt[t_ajuste_final], X_tendencia_ajuste_final, criar_matriz_fourier(t_ajuste_final, s, K))
 previsao_teste_fourier <- prever(modelo_final_fourier, X_tendencia_teste, criar_matriz_fourier(t_teste, s, K))
 
-# Dummies: os mesmos passos.
 modelo_treino_dummies <- ajustar_modelo(Xt[t_treino], X_tendencia_treino, criar_matriz_dummies(t_treino, s))
 previsao_validacao_dummies <- prever(modelo_treino_dummies, X_tendencia_validacao, criar_matriz_dummies(t_validacao, s))
 
 modelo_final_dummies <- ajustar_modelo(Xt[t_ajuste_final], X_tendencia_ajuste_final, criar_matriz_dummies(t_ajuste_final, s))
 previsao_teste_dummies <- prever(modelo_final_dummies, X_tendencia_teste, criar_matriz_dummies(t_teste, s))
 
-# Erros de cada trecho. No teste, o R² usa a média dos dados do ajuste final.
+# Calcula os erros de cada trecho e usa, no R² do teste, a média dos dados
+# empregados no ajuste final como referência.
 erro_treino_fourier <- avaliar_previsao(Xt[t_treino], modelo_treino_fourier$y_hat, media_treino)
 erro_validacao_fourier <- avaliar_previsao(Xt[t_validacao], previsao_validacao_fourier, media_treino)
 erro_teste_fourier <- avaliar_previsao(Xt[t_teste], previsao_teste_fourier, media_ajuste_final)
@@ -232,7 +232,6 @@ cat("Dummies no treino - RMSE:", round(erro_treino_dummies$rmse, 4), "- MAE:", r
 cat("Dummies na validação - RMSE:", round(erro_validacao_dummies$rmse, 4), "- MAE:", round(erro_validacao_dummies$mae, 4), "- R²:", round(erro_validacao_dummies$r2, 4), "\n")
 cat("Dummies no teste - RMSE:", round(erro_teste_dummies$rmse, 4), "- MAE:", round(erro_teste_dummies$mae, 4), "- R²:", round(erro_teste_dummies$r2, 4), "\n")
 
-# Escolhe o método com menor RMSE na validação.
 if(erro_validacao_fourier$rmse <= erro_validacao_dummies$rmse){
   metodo_escolhido <- "Fourier"
   rmse_teste_escolhido <- erro_teste_fourier$rmse
@@ -258,7 +257,7 @@ grafico <- plot_decomposicao(
   modelo$residuos
 )
 print(grafico)
-# Gráfico de quatro painéis, com o dobro da altura dos demais.
+# Salva o gráfico de quatro painéis com o dobro da altura dos demais para dar espaço às séries.
 salvar_grafico(grafico,
                "decomposicao/01_decomposicao_aditiva",
                parametros,

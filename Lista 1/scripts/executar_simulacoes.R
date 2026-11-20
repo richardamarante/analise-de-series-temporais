@@ -5,15 +5,15 @@
 ############################################################
 
 # Imprime o título de uma seção no console.
-# Entrada: titulo (texto).
-# Saída: nenhuma, apenas impressão no console.
+# Entrada: titulo, texto da seção.
+# Saída: impressão no console, sem valor de retorno.
 imprimir_titulo_console <- function(titulo){
   cat("\n# -- ", titulo, " -- #\n\n", sep = "")
 }
 
-# Imprime os instantes e limites de cada janela de um cilindro.
-# Entrada: tempos, limite_inferior e limite_superior (vetores do mesmo tamanho).
-# Saída: nenhuma, apenas impressão no console.
+# Imprime os instantes e os limites das janelas de um cilindro.
+# Entrada: tempos, limite_inferior e limite_superior, vetores do mesmo tamanho.
+# Saída: impressão no console, sem valor de retorno.
 imprimir_janelas <- function(tempos, limite_inferior, limite_superior){
 
   for(i in 1:length(tempos)){
@@ -23,9 +23,9 @@ imprimir_janelas <- function(tempos, limite_inferior, limite_superior){
   }
 }
 
-# Salva os dados em CSV, com uma coluna por trajetória quando a entrada é uma matriz.
-# Entrada: dados (data.frame ou matriz n x m) e nome_arquivo (sem extensão).
-# Saída: arquivo data/<nome_arquivo>.csv, criando a pasta data/ se necessário.
+# Salva os dados em CSV, usando uma coluna por trajetória quando a entrada é uma matriz.
+# Entrada: dados, um data.frame ou matriz n x m, e nome_arquivo, sem extensão.
+# Saída: arquivo data/<nome_arquivo>.csv, criando a pasta data/ quando necessário.
 salvar_dados <- function(dados, nome_arquivo){
 
   if(is.matrix(dados)){
@@ -36,14 +36,14 @@ salvar_dados <- function(dados, nome_arquivo){
     dir.create("data")
   }
 
-  # Usa modo binário para manter as quebras de linha LF no Windows.
+  # Usa o modo binário para manter as quebras de linha LF no Windows.
   arquivo <- file(paste0("data/", nome_arquivo, ".csv"), open = "wb")
   write.csv(dados, file = arquivo, row.names = FALSE)
   close(arquivo)
 }
 
 # Executa as quatro partes da lista e gera os resultados.
-# Entrada: parametros (lista com seed, sigma2, n, m, cilindros e opções de gráficos).
+# Entrada: parametros, lista com seed, sigma2, n, m, cilindros e opções de gráficos.
 # Saída: resultados no console, gráficos na tela, arquivos CSV em data/ e PNG em graficos/.
 executar_simulacoes <- function(parametros){
   
@@ -54,17 +54,14 @@ executar_simulacoes <- function(parametros){
   
   set.seed(seed)
   
-  # Simula a série e as trajetórias de ruído branco, calcula as estatísticas e gera os gráficos.
   imprimir_titulo_console("RUÍDO BRANCO")
   
   eps <- simular_ruido_branco(n, sigma2)
   traj <- simular_multiplas_trajetorias_ruido(n, m, sigma2)
   media <- calcular_media_trajetoria(traj)
   variancia <- calcular_variancia_trajetoria(traj)
-  # Calcula a covariância entre εₜ e εₜ₋₁ em cada instante.
   covariancia <- calcular_covariancia_trajetoria(traj)
 
-  # Salva a série e as trajetórias simuladas em data/.
   salvar_dados(data.frame(tempo = 1:n, eps_t = eps), "ruido_branco")
   salvar_dados(traj, "trajetorias_ruido_branco")
   
@@ -122,7 +119,7 @@ executar_simulacoes <- function(parametros){
                  "ruido_branco/05_variancia_amostral_trajetorias_ruido_branco",
                  parametros)
   
-  # A covariância teórica do ruído branco entre t e t-1 é zero.
+  # Para o ruído branco, a covariância teórica entre t e t-1 é zero.
   referencia_cov_ruido <- rep(0, n)
 
   grafico <- plot_covariancia(
@@ -150,17 +147,15 @@ executar_simulacoes <- function(parametros){
   cat("Média da série simulada:", round(calcular_media_serie(eps), 4), "\n")
   cat("Variância da série simulada:", round(calcular_variancia_serie(eps), 4), "\n")
   
-  # Simula a série, os incrementos e as trajetórias do passeio aleatório e gera os gráficos.
   imprimir_titulo_console("PASSEIO ALEATÓRIO")
   
   pa <- simular_passeio_aleatorio(n, sigma2)
-  # Calcula os incrementos X_t - X_{t-1}, que devem se comportar como ruído branco.
+  # Os incrementos X_t - X_{t-1} recuperam os ruídos que formam o passeio aleatório.
   incrementos <- diff(pa)
   traj_pa <- simular_multiplos_passeio_aleatorio(n, m, sigma2)
   media_pa <- calcular_media_trajetoria(traj_pa)
   var_pa <- calcular_variancia_trajetoria(traj_pa)
 
-  # Salva a série e as trajetórias simuladas em data/.
   salvar_dados(data.frame(tempo = 1:n, X_t = pa), "passeio_aleatorio")
   salvar_dados(traj_pa, "trajetorias_passeio_aleatorio")
   
@@ -206,8 +201,8 @@ executar_simulacoes <- function(parametros){
                  "passeio_aleatorio/04_histograma_incrementos_passeio_aleatorio",
                  parametros)
   
-  # Envelope teórico de 95%: X_t ~ N(0, sigma2 * t).
-  # Em cada instante, P(|X_t| <= 1,96 * sigma * sqrt(t)) = 0,95.
+  # Como X_t ~ N(0, sigma2 * t), o envelope ±1,96 * sqrt(sigma2 * t) contém X_t
+  # com probabilidade 0,95 em cada instante.
   envelope_pa <- 1.96 * sqrt(sigma2) * sqrt(1:n)
 
   grafico <- plot_trajetorias_media(
@@ -243,7 +238,6 @@ executar_simulacoes <- function(parametros){
   cat("Variância dos Incrementos entre Xₜ e Xₜ₋₁:",
       round(calcular_variancia_serie(incrementos), 4), "\n")
   
-  # Verifica quantas trajetórias pertencem ao cilindro do passeio aleatório.
   imprimir_titulo_console("CILINDRO DE UM PASSEIO ALEATÓRIO")
   
   n_cilindro <- parametros$n_cilindro
@@ -288,7 +282,6 @@ executar_simulacoes <- function(parametros){
   cat("Número de trajetórias no cilindro:", numero_trajetorias_cilindro, "\n")
   cat("Proporção de trajetórias no cilindro:", round(proporcao, 4), "\n")
   
-  # Verifica quantas trajetórias pertencem aos dois cilindros.
   imprimir_titulo_console("INTERSEÇÃO DE DOIS CILINDROS")
   
   n_intersecao <- parametros$n_intersecao
@@ -319,7 +312,6 @@ executar_simulacoes <- function(parametros){
     sup2
   )
   
-  # Uma trajetória pertence à interseção se estiver nos dois cilindros.
   intersecao <- cilindro1 & cilindro2
   
   numero_intersecao <- contar_trajetorias_cilindro(intersecao)

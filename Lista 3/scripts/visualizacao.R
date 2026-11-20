@@ -1,16 +1,17 @@
 ############################################################
 # visualizacao.R
-# Gera gráficos da série, média móvel, tendência, FAC, comparação com acf() e figura integrada.
+# Gera os gráficos da série, média móvel, tendência e FAC, incluindo a comparação com
+# acf() do R e a figura integrada.
 # Dependências: pacotes ggplot2 e patchwork.
 ############################################################
 
-# Cores usadas nos gráficos.
 cor_principal <- "#37474F"
 cor_referencia <- "#C44E52"
 cor_acf <- "#4C78A8"
 cor_tendencia <- "#8E5AD7"
 
-# Define o tema usado em todos os gráficos.
+# Define o tema usado em todos os gráficos para manter a mesma aparência.
+# Entrada: nenhuma.
 # Saída: tema do ggplot2.
 tema_graficos <- function(){
   return(
@@ -28,9 +29,9 @@ tema_graficos <- function(){
   )
 }
 
-# Ajusta os eixos: x começa no primeiro instante e tem 2% de folga à direita.
-# O eixo y recebe 5% de folga em cima e embaixo.
-# Entrada: grafico (objeto ggplot).
+# Ajusta as escalas para o eixo x começar no primeiro instante, com 2% de folga à direita,
+# enquanto o eixo y recebe 5% de folga em cima e embaixo.
+# Entrada: grafico como objeto ggplot.
 # Saída: objeto ggplot com as escalas ajustadas.
 ajustar_eixos <- function(grafico){
   grafico <- grafico +
@@ -41,8 +42,8 @@ ajustar_eixos <- function(grafico){
 }
 
 # Salva o gráfico em graficos/<nome_arquivo>.png quando salvar_graficos é true.
-# Entrada: grafico (ggplot ou patchwork), nome_arquivo (texto sem extensão).
-# Entrada: parametros (lista com salvar_graficos e medidas), fator_altura (número, padrão 1).
+# Entrada: grafico como ggplot ou patchwork, nome_arquivo sem extensão, parametros com
+# salvar_graficos e medidas e fator_altura numérico, com padrão 1.
 # Saída: nenhuma, apenas grava o arquivo.
 salvar_grafico <- function(grafico, nome_arquivo, parametros, fator_altura = 1){
   if(parametros$salvar_graficos){
@@ -61,15 +62,15 @@ salvar_grafico <- function(grafico, nome_arquivo, parametros, fator_altura = 1){
 }
 
 # Imprime o título de uma etapa no console.
-# Entrada: titulo (texto).
+# Entrada: titulo como texto.
 # Saída: nenhuma, apenas imprime o título.
 imprimir_titulo_console <- function(titulo){
   cat("\n# -- ", titulo, " -- #\n\n", sep = "")
 }
 
 # Mostra a série temporal em um gráfico.
-# Entrada: tempo e serie (vetores de tamanho n), titulo (texto).
-# Entrada: ylab (rótulo do eixo y), rotulo_serie (texto da legenda).
+# Entrada: tempo e serie como vetores de tamanho n, titulo e ylab como textos e
+# rotulo_serie como texto da legenda.
 # Saída: objeto ggplot.
 plot_serie_temporal <- function(tempo,
                                 serie,
@@ -106,8 +107,8 @@ plot_serie_temporal <- function(tempo,
 }
 
 # Mostra a série, a média móvel centrada e a tendência verdadeira X %*% beta.
-# Entrada: tempo e serie (vetores de tamanho n), media_movel (vetor de tamanho n - 2q).
-# Entrada: tendencia (vetor de tamanho n), q (inteiro), titulo e ylab (textos).
+# Entrada: tempo e serie como vetores de tamanho n, media_movel de tamanho n - 2q,
+# tendencia de tamanho n, q inteiro e titulo e ylab como textos.
 # Saída: objeto ggplot.
 # Pré-condição: length(media_movel) == n - 2q e length(tendencia) == n.
 plot_serie_media_movel <- function(tempo,
@@ -172,7 +173,8 @@ plot_serie_media_movel <- function(tempo,
 }
 
 # Mostra a FAC empírica em hastes, com limites de 95% dados por ±1,96 / sqrt(n).
-# Entrada: fac (vetor de rho(0) até rho(max_lag)), n (tamanho da série), titulo (texto).
+# Entrada: fac com os valores de rho(0) até rho(max_lag), n como tamanho da série
+# e titulo como texto.
 # Saída: objeto ggplot.
 plot_fac_empirica <- function(fac, n, titulo){
 
@@ -229,7 +231,7 @@ plot_fac_empirica <- function(fac, n, titulo){
 }
 
 # Compara a FAC manual em hastes com os valores da acf() do R em pontos.
-# Entrada: fac (vetor manual), fac_r (vetor da acf() do R), titulo (texto).
+# Entrada: fac como vetor da FAC manual, fac_r como vetor da acf() do R e titulo como texto.
 # Saída: objeto ggplot.
 # Pré-condição: fac e fac_r têm o mesmo tamanho.
 plot_comparacao_acf_r <- function(fac, fac_r, titulo){
@@ -285,7 +287,7 @@ plot_comparacao_acf_r <- function(fac, fac_r, titulo){
 }
 
 # Junta o gráfico da série em cima e o da FAC embaixo.
-# Entrada: grafico_serie e grafico_fac (objetos ggplot).
+# Entrada: grafico_serie e grafico_fac como objetos ggplot.
 # Saída: objeto patchwork, salvo com fator_altura = 1.6.
 plot_grafico_integrado <- function(grafico_serie, grafico_fac){
   integrado <- grafico_serie / grafico_fac

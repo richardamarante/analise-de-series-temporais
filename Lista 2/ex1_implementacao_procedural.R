@@ -1,46 +1,27 @@
 ############################################################
 # ex1_implementacao_procedural.R
-# Simula ruído branco, passeio aleatório e AR(1) com implementação procedural, sem funções.
+# Simula ruído branco, passeio aleatório e AR(1) de forma procedural, sem definir funções.
 # Dependências: R base.
 
 # (a) ENTRADAS
-# n = 200: tamanho das séries.
-# max_lag = 20: maior defasagem da autocovariância e da FAC, com max_lag < n.
-# sigma2 = 1: variância do ruído branco.
-# phi = 0.7: coeficiente do AR(1), com |phi| < 1.
-# semente = 123: set.seed(123) após rm() e antes dos sorteios.
-# Todos os valores são definidos no próprio script, sem entrada externa.
+# Os parâmetros de simulação e a semente são definidos no próprio script, sem entrada externa.
 
 # (b) SAÍDAS
-# Séries: eps (ruído branco), X (passeio aleatório), X_ar1 (AR(1)).
-# Médias: media_eps, media_X, media_ar1.
-# Autocovariâncias: gamma_eps, gamma_X, gamma_ar1, dos lags 0 a max_lag.
-# FACs: fac_eps, fac_X, fac_ar1 e fac_ar1_teorica.
-# Terminal: médias individuais e resumo final.
-# Gráficos: séries, FACs, comparação do AR(1) e acf() do R para ruído branco e passeio.
+# Produz as três séries, suas médias e FACs, as comparações com acf() e os gráficos,
+# além de imprimir as médias individuais e um resumo dos resultados no console.
 
 # (c) ESTRUTURAS DE DADOS
-# Séries: vetores numéricos de tamanho n, com t = 1, ..., n.
-# Autocovariâncias e FACs: vetores de tamanho max_lag + 1, com o lag h na posição h+1.
-# Lags: vetor 0:max_lag, usado nos gráficos.
+# As séries são vetores de tamanho n e as autocovariâncias e FACs têm max_lag + 1 posições,
+# com o lag h armazenado na posição h+1 porque os índices em R começam em 1.
 
 # (d) FUNÇÕES REPRESENTADAS PELOS BLOCOS PROCEDURAIS
-# simular_ruido_branco: sorteio de eps.
-# simular_passeio_aleatorio: sorteio de eps_pa e loop de X com acumular_passeio_aleatorio.
-# simular_ar1: loop de X_ar1.
-# calcular_media_empirica: soma dos valores e divisão por n.
-# calcular_autocovariancia_empirica e calcular_autocovariancias: loops de h e t.
-# calcular_fac_empirica: divisão das autocovariâncias por gamma(0).
-# calcular_fac_teorica_ar1: cálculo de phi^h.
-# plot_serie_temporal, plot_fac_empirica e plot_fac_comparacao: chamadas de plot() e barplot().
+# Os blocos simulam os três processos, incluindo X_t = phi * X_{t-1} + eps_t, e calculam
+# gamma(h) = (1/n) * soma (X_t - media)(X_{t+h} - media) e rho(h) = gamma(h)/gamma(0).
+# Também calculam phi^h para o AR(1) e geram os gráficos com plot() e barplot().
 
 # (e) FLUXO DE EXECUÇÃO
-# 1. Define parâmetros e semente.
-# 2. Simula ruído branco, calcula média e FAC e gera gráficos.
-# 3. Simula passeio aleatório, calcula média e FAC e gera gráficos.
-# 4. Compara as FACs do ruído branco e do passeio com acf() do R.
-# 5. Simula AR(1), calcula média, FAC empírica e teórica e gera gráficos.
-# 6. Imprime o resumo das médias.
+# Define os parâmetros, simula os processos e calcula as estatísticas, depois compara as FACs
+# com acf() e com a expressão teórica do AR(1), gera os gráficos e imprime o resumo.
 ############################################################
 
 rm(list = ls())
@@ -62,15 +43,13 @@ phi <- 0.7
 # 5. EXEMPLOS DE USO
 ############################################################
 
-# RUÍDO BRANCO: eps_t ~ N(0, sigma2).
-# Sorteia n valores independentes, um por vez.
+# Sorteia os choques um por vez para manter a implementação procedural do ruído branco.
 eps <- numeric(n)
 
 for(t in 1:n){
   eps[t] <- rnorm(1, mean = 0, sd = sqrt(sigma2))
 }
 
-# MÉDIA EMPÍRICA: soma os n valores e divide por n.
 soma <- 0
 
 for(t in 1:n){
@@ -81,10 +60,8 @@ media_eps <- soma / n
 
 cat("Média empírica (ruído branco):", round(media_eps, 4), "\n")
 
-# AUTOCOVARIÂNCIA EMPÍRICA
-# O loop externo percorre os lags h = 0, ..., max_lag.
-# O interno soma (X_t - média)(X_{t+h} - média) até t = n-h.
-# O limite n-h impede que t+h ultrapasse a série. Para h = 0, a soma dá a variância.
+# Para cada lag h, o loop interno soma os produtos dos desvios até t = n-h, evitando que
+# o índice t+h ultrapasse a série. Em h = 0, a soma dividida por n fornece a variância.
 gamma_eps <- numeric(max_lag + 1)
 
 for(h in 0:max_lag){
@@ -100,7 +77,6 @@ for(h in 0:max_lag){
   gamma_eps[h+1] <- soma / n
 }
 
-# FAC EMPÍRICA: rho(h) = gamma(h) / gamma(0), calculada para cada lag.
 fac_eps <- numeric(max_lag + 1)
 
 for(h in 0:max_lag){
@@ -131,8 +107,7 @@ barplot(fac_eps,
 
 par(mfrow = c(1,1))
 
-# PASSEIO ALEATÓRIO: X_t = X_{t-1} + eps_t.
-# Sorteia novos choques, independentes dos usados no ruído branco.
+# Sorteia novos choques independentes para que o passeio não reutilize o ruído branco anterior.
 eps_pa <- numeric(n)
 
 for(t in 1:n){
@@ -141,13 +116,11 @@ for(t in 1:n){
 
 X <- numeric(n)
 
-# Condição inicial: sem X_0, o primeiro valor é X_1 = eps_1.
+# Como não há X_0, o passeio começa em X_1 = eps_1.
 X[1] <- eps_pa[1]
 
-# LOOP DE RECORRÊNCIA TEMPORAL
-# Em cada instante t, soma o choque eps_pa[t] ao valor anterior X[t-1].
-# O loop segue a ordem crescente porque X[t] depende de X[t-1].
-# Assim, X_t = eps_1 + ... + eps_t, e a variância cresce com o tempo.
+# O loop segue a ordem crescente porque cada X_t depende de X_{t-1}, acumulando os choques
+# desde o início, o que faz a variância do passeio crescer com o tempo.
 for(t in 2:n){
   X[t] <- X[t-1] + eps_pa[t]
 }
@@ -162,7 +135,6 @@ media_X <- soma / n
 
 cat("Média empírica (passeio aleatório):", round(media_X, 4), "\n")
 
-# Calcula as autocovariâncias do passeio com h no loop externo e t no interno.
 gamma_X <- numeric(max_lag + 1)
 
 for(h in 0:max_lag){
@@ -208,7 +180,6 @@ barplot(fac_X,
 
 par(mfrow = c(1,1))
 
-# Divide a janela em dois gráficos para comparar as FACs com acf() do R.
 par(mfrow = c(2,1))
 
 acf(eps,
@@ -219,7 +190,6 @@ acf(X,
 
 par(mfrow = c(1,1))
 
-# PROCESSO AR(1): X_t = phi * X_{t-1} + eps_t, com novos choques.
 eps_ar1 <- numeric(n)
 
 for(t in 1:n){
@@ -228,13 +198,10 @@ for(t in 1:n){
 
 X_ar1 <- numeric(n)
 
-# Condição inicial: X_1 = eps_1.
 X_ar1[1] <- eps_ar1[1]
 
-# LOOP DE RECORRÊNCIA TEMPORAL
-# Em cada instante t, multiplica X[t-1] por phi e soma eps_ar1[t].
-# Com |phi| < 1, a influência do passado diminui como phi, phi^2, phi^3, ...
-# A série tende a oscilar em torno de zero. Com phi = 1, seria um passeio aleatório.
+# O valor anterior recebe peso phi e um novo choque é somado. Como |phi| < 1, a influência
+# do passado diminui com as potências de phi, enquanto phi = 1 produziria um passeio aleatório.
 for(t in 2:n){
   X_ar1[t] <- phi * X_ar1[t-1] + eps_ar1[t]
 }
@@ -270,7 +237,6 @@ for(h in 0:max_lag){
   fac_ar1[h+1] <- gamma_ar1[h+1] / gamma_ar1[1]
 }
 
-# FAC TEÓRICA DO AR(1): rho(h) = phi^h.
 fac_ar1_teorica <- numeric(max_lag + 1)
 
 for(h in 0:max_lag){

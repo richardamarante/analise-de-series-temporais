@@ -1,7 +1,7 @@
 ############################################################
 # ex4_eficiencia.R
-# Compara loops e versões vetorizadas da matriz X, simulação, média móvel e autocovariâncias.
-# Mede os tempos e gera o gráfico do tempo em função de n.
+# Compara as versões com loops e vetorizadas da matriz X, simulação, média móvel e
+# autocovariâncias, medindo os tempos e gerando o gráfico do tempo em função de n.
 # Dependências: scripts/config.R, scripts/dados.R, scripts/processamento.R e ggplot2.
 # Executar com a pasta da lista como diretório de trabalho.
 ############################################################
@@ -16,8 +16,8 @@ source("scripts/dados.R")
 source("scripts/processamento.R")
 source("scripts/visualizacao.R")
 
-# Cria a matriz X com as colunas 1, t e t², sem loops.
-# Entrada: parametros (lista com n), t (vetor de tempo de tamanho n).
+# Monta X com as colunas 1, t e t² usando operações vetorizadas, sem loops.
+# Entrada: parametros com n e t como vetor de tempo de tamanho n.
 # Saída: matriz numérica n x 3, igual à de criar_matriz_regressao.
 criar_matriz_regressao_vetorizada <- function(parametros, t){
   X <- cbind(1, t, t^2)
@@ -25,8 +25,8 @@ criar_matriz_regressao_vetorizada <- function(parametros, t){
   return(X)
 }
 
-# Simula a série com X %*% beta e rnorm(n), sem loops.
-# Entrada: beta (vetor com ncol(X) coeficientes), X (matriz n x p), sigma (desvio padrão).
+# Simula X %*% beta + eps usando rnorm(n), sem percorrer as linhas por loop.
+# Entrada: beta com ncol(X) coeficientes, X de dimensão n x p e sigma como desvio padrão.
 # Saída: vetor de tamanho n, igual ao de simular_serie_com_tendencia com a mesma semente.
 # Pré-condição: length(beta) == ncol(X).
 simular_serie_com_tendencia_vetorizada <- function(beta, X, sigma){
@@ -40,9 +40,9 @@ simular_serie_com_tendencia_vetorizada <- function(beta, X, sigma){
   return(Xt)
 }
 
-# Calcula a autocovariância de lag h pelo produto dos desvios deslocados h posições.
-# Entrada: serie (vetor numérico de tamanho n), h (inteiro com 0 <= h < n).
-# Saída: número, igual ao de calcular_autocovariancia_empirica.
+# Calcula gamma(h) pelo produto dos desvios deslocados h posições, dividindo a soma por n.
+# Entrada: serie numérica de tamanho n e h inteiro, com 0 <= h < n.
+# Saída: número igual ao de calcular_autocovariancia_empirica.
 # Pré-condição: serie sem NA.
 calcular_autocovariancia_empirica_vetorizada <- function(serie, h){
 
@@ -58,7 +58,7 @@ calcular_autocovariancia_empirica_vetorizada <- function(serie, h){
 }
 
 # Calcula as autocovariâncias de h = 0 até max_lag, sem loop sobre os instantes.
-# Entrada: serie (vetor numérico de tamanho n), max_lag (inteiro com 0 <= max_lag < n).
+# Entrada: serie numérica de tamanho n e max_lag inteiro, com 0 <= max_lag < n.
 # Saída: vetor de tamanho max_lag + 1.
 # Pré-condição: serie sem NA.
 calcular_autocovariancias_vetorizada <- function(serie, max_lag){
@@ -71,7 +71,7 @@ calcular_autocovariancias_vetorizada <- function(serie, max_lag){
 }
 
 # Calcula a média móvel centrada pela diferença entre somas acumuladas.
-# Entrada: serie (vetor numérico de tamanho n), q (inteiro com 2q + 1 <= n).
+# Entrada: serie numérica de tamanho n e q inteiro, com 2q + 1 <= n.
 # Saída: vetor de tamanho n - 2q, igual ao de calcular_media_movel.
 # Pré-condição: serie sem NA.
 calcular_media_movel_vetorizada <- function(serie, q){
@@ -84,7 +84,7 @@ calcular_media_movel_vetorizada <- function(serie, q){
 
   if(numero_medias > 0){
 
-    # O zero inicial permite calcular cada janela pela diferença entre duas somas acumuladas.
+    # O zero inicial permite obter a soma de cada janela pela diferença entre duas somas acumuladas.
     soma_acumulada <- c(0, cumsum(serie))
 
     medias <- (soma_acumulada[(2*q+2):(n+1)] - soma_acumulada[1:numero_medias]) / (2*q + 1)
@@ -93,9 +93,9 @@ calcular_media_movel_vetorizada <- function(serie, q){
   return(medias)
 }
 
-# Calcula max(abs(a - b)) / max(abs(a)) em notação científica.
-# Entrada: a (resultado com loop), b (resultado vetorizado), com as mesmas dimensões.
-# Saída: texto com a diferença relativa ou "0" quando os resultados coincidem.
+# Formata max(abs(a - b)) / max(abs(a)) em notação científica, ou "0" se não houver diferença.
+# Entrada: a e b são os resultados das duas versões e têm as mesmas dimensões.
+# Saída: texto com a diferença relativa.
 # Pré-condição: a contém pelo menos um valor diferente de zero.
 formatar_diferenca_relativa <- function(a, b){
 
@@ -110,9 +110,9 @@ formatar_diferenca_relativa <- function(a, b){
   return(texto)
 }
 
-# Compara os tempos e resultados das versões com loop e vetorizada.
-# Entrada: parametros (lista com seed, sigma, q, max_lag, beta, n_eficiencia e repeticoes_eficiencia).
-# Saída: tempos, razões, igualdade e diferenças relativas no console.
+# Compara os resultados e os tempos das versões com loop e vetorizada.
+# Entrada: parametros com seed, sigma, q, max_lag, beta, n_eficiencia e repeticoes_eficiencia.
+# Saída: tempos, razões, igualdade e diferenças relativas mostrados no console.
 # Pré-condição: funções de config.R, dados.R e processamento.R carregadas.
 comparar_eficiencia <- function(parametros){
 
@@ -125,7 +125,6 @@ comparar_eficiencia <- function(parametros){
   t <- criar_tempo(parametros)
   beta <- parametros$beta
 
-  # Mede o tempo de construção da matriz X com loop.
   tempo_x_loop <- system.time({
     for(r in 1:repeticoes){
       X <- criar_matriz_regressao(parametros, t)
@@ -138,7 +137,7 @@ comparar_eficiencia <- function(parametros){
     }
   })[["elapsed"]]
 
-  # Mede a simulação com loop, usando a mesma semente nas duas versões.
+  # Usa a mesma semente nas duas versões para comparar os resultados da simulação.
   tempo_sim_loop <- system.time({
     for(r in 1:repeticoes){
       set.seed(parametros$seed)
@@ -153,7 +152,6 @@ comparar_eficiencia <- function(parametros){
     }
   })[["elapsed"]]
 
-  # Mede o tempo de cálculo da média móvel com loop.
   tempo_mm_loop <- system.time({
     for(r in 1:repeticoes){
       mm_loop <- calcular_media_movel(Xt_loop, q)
@@ -166,7 +164,6 @@ comparar_eficiencia <- function(parametros){
     }
   })[["elapsed"]]
 
-  # Mede o tempo de cálculo das autocovariâncias com loop.
   tempo_ac_loop <- system.time({
     for(r in 1:repeticoes){
       ac_loop <- calcular_autocovariancias(Xt_loop, max_lag)
@@ -211,8 +208,8 @@ comparar_eficiencia <- function(parametros){
   cat("Maior diferença relativa:", formatar_diferenca_relativa(ac_loop, ac_vet), "\n")
 }
 
-# Soma o tempo decorrido de várias chamadas da mesma função.
-# Entrada: funcao (função medida), repeticoes (inteiro positivo), ... (argumentos da função).
+# Soma os tempos de várias chamadas da mesma função.
+# Entrada: funcao a medir, repeticoes como inteiro positivo e ... com os argumentos de funcao.
 # Saída: tempo total em segundos.
 medir_tempo <- function(funcao, repeticoes, ...){
 
@@ -225,12 +222,12 @@ medir_tempo <- function(funcao, repeticoes, ...){
   return(tempo)
 }
 
-# Mede os tempos da simulação, média móvel e autocovariâncias para diferentes valores de n.
-# Entrada: parametros (lista com seed, sigma, q, max_lag, beta e repeticoes_eficiencia).
-# Entrada: valores_n (vetor de inteiros positivos).
-# Saída: data.frame com n, operacao, versao e tempo, com seis linhas por valor de n.
-# Pré-condição: funções de config.R, dados.R e processamento.R carregadas.
-# Pré-condição: max_lag < 2q + 1 <= min(valores_n).
+# Mede os tempos da simulação, média móvel e autocovariâncias para cada n em valores_n.
+# Entrada: parametros com seed, sigma, q, max_lag, beta e repeticoes_eficiencia, além de
+# valores_n como vetor de inteiros positivos.
+# Saída: data.frame com n, operacao, versao e tempo, com seis linhas para cada valor de n.
+# Pré-condição: max_lag < 2q + 1 <= min(valores_n) e funções de config.R, dados.R
+# e processamento.R carregadas.
 medir_tempos_por_n <- function(parametros, valores_n){
 
   repeticoes <- parametros$repeticoes_eficiencia
@@ -271,7 +268,7 @@ medir_tempos_por_n <- function(parametros, valores_n){
                                tempo = tempo))
   }
 
-  # Define a ordem das operações nos painéis e na legenda.
+  # Mantém a mesma ordem das operações nos painéis e na legenda.
   tempos$operacao <- factor(tempos$operacao,
                             levels = c("Simulação da Série", "Média Móvel", "Autocovariâncias"))
   tempos$versao <- factor(tempos$versao,
@@ -280,8 +277,8 @@ medir_tempos_por_n <- function(parametros, valores_n){
   return(tempos)
 }
 
-# Mostra o tempo em função de n, com um painel por operação e uma linha por versão.
-# Entrada: tempos (data.frame de medir_tempos_por_n), repeticoes (inteiro para o eixo y).
+# Mostra o tempo em função de n, com um painel por operação e uma linha para cada versão.
+# Entrada: tempos como data.frame de medir_tempos_por_n e repeticoes para o eixo y.
 # Saída: objeto ggplot.
 plot_tempo_eficiencia <- function(tempos, repeticoes){
 
@@ -315,7 +312,6 @@ parametros <- ler_parametros("parametros.json")
 
 comparar_eficiencia(parametros)
 
-# Compara os tempos para n = 1000, 25000 e parametros$n_eficiencia.
 valores_n <- c(1000L, 25000L, parametros$n_eficiencia)
 
 tempos <- medir_tempos_por_n(parametros, valores_n)

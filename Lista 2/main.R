@@ -1,6 +1,7 @@
 ############################################################
 # main.R
-# Coordena configuração, simulação, cálculos estatísticos, comparações e gráficos.
+# Coordena a simulação dos processos, os cálculos estatísticos, as comparações e os gráficos,
+# além de apresentar os resultados no console.
 # Dependências: scripts/config.R, scripts/dados.R, scripts/processamento.R e scripts/visualizacao.R.
 # Execução: usar a pasta da lista como diretório de trabalho.
 ############################################################
@@ -32,7 +33,6 @@ phi <- parametros$phi
 # SIMULAÇÃO DE SÉRIES
 ############################################################
 
-# Simula ruído branco, passeio aleatório e AR(1), na mesma ordem do ex1_implementacao_procedural.R.
 eps <- simular_ruido_branco(n, sigma2)
 X <- simular_passeio_aleatorio(n, sigma2)
 X_ar1 <- simular_ar1(n, phi, sigma2)
@@ -55,12 +55,12 @@ fac_ar1_teorica <- calcular_fac_teorica_ar1(phi, max_lag)
 # ANÁLISE E COMPARAÇÃO
 ############################################################
 
-# Compara a FAC manual com acf() do R. A posição h+1 guarda o lag h nas duas versões.
+# Na comparação com acf(), o lag h ocupa a posição h+1 nos dois vetores porque o lag zero
+# também é armazenado.
 acf_eps <- as.numeric(acf(eps, lag.max = max_lag, plot = FALSE)$acf)
 acf_X <- as.numeric(acf(X, lag.max = max_lag, plot = FALSE)$acf)
 acf_ar1 <- as.numeric(acf(X_ar1, lag.max = max_lag, plot = FALSE)$acf)
 
-# Calcula a diferença absoluta entre as FACs empírica e teórica do AR(1), lag a lag.
 diferenca_ar1 <- abs(fac_ar1 - fac_ar1_teorica)
 erro_fac_ar1 <- max(diferenca_ar1)
 
@@ -203,7 +203,6 @@ cat("Maior diferença para o acf() do R:",
 
 imprimir_titulo_console("FAC DO AR(1): EMPÍRICA, TEÓRICA E DIFERENÇA")
 
-# Imprime rho_hat(h), phi^h e a diferença absoluta para cada lag.
 for(h in 0:max_lag){
   cat("lag", h,
       "| empírica:", round(fac_ar1[h+1], 4),

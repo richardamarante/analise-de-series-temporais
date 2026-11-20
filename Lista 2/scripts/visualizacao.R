@@ -1,18 +1,18 @@
 ############################################################
 # visualizacao.R
-# Gera gráficos das séries, FACs e comparações com a FAC teórica e acf() do R.
+# Gera os gráficos das séries temporais e das FACs, incluindo as comparações com acf()
+# e com a FAC teórica do AR(1).
 # Dependências: pacote ggplot2. Não realiza cálculos estatísticos.
 ############################################################
 
-# Paleta de cores dos gráficos.
 cor_principal <- "#37474F"
 cor_referencia <- "#C44E52"
 cor_acf <- "#4C78A8"
 cor_fac_teorica <- "#2E7D32"
 
-# Define o tema comum aos gráficos.
-# Entrada: Nenhuma.
-# Saída: Tema do ggplot2.
+# Define um tema comum para manter a mesma aparência nos gráficos.
+# Entrada: nenhuma.
+# Saída: tema do ggplot2.
 tema_graficos <- function(){
   return(
     theme_classic(base_size = 13) +
@@ -29,9 +29,9 @@ tema_graficos <- function(){
   )
 }
 
-# Ajusta os eixos com folga de 5% no eixo y e 2% à direita no eixo x.
-# Entrada: grafico (objeto ggplot).
-# Saída: Objeto ggplot com os eixos ajustados.
+# Ajusta os eixos, deixando uma folga de 5% no eixo y e de 2% à direita no eixo x.
+# Entrada: grafico é um objeto ggplot.
+# Saída: objeto ggplot com os eixos ajustados.
 ajustar_eixos <- function(grafico){
   grafico <- grafico +
     scale_x_continuous(expand = expansion(mult = c(0, 0.02))) +
@@ -40,9 +40,10 @@ ajustar_eixos <- function(grafico){
   return(grafico)
 }
 
-# Salva o gráfico em graficos/<nome_arquivo>.png, criando a pasta se necessário.
-# Entrada: grafico (ggplot), nome_arquivo (texto sem extensão), parametros (lista de opções).
-# Saída: Nenhuma, apenas grava o arquivo.
+# Salva o gráfico em graficos/<nome_arquivo>.png e cria a pasta caso ela não exista.
+# Entrada: grafico é um objeto ggplot, nome_arquivo é um texto sem extensão e parametros
+# contém as opções de salvamento.
+# Saída: nenhuma, apenas grava o arquivo.
 # Pré-condição: parametros contém salvar_graficos, largura_grafico, altura_grafico e dpi_grafico.
 salvar_grafico <- function(grafico, nome_arquivo, parametros){
   if(parametros$salvar_graficos){
@@ -61,8 +62,9 @@ salvar_grafico <- function(grafico, nome_arquivo, parametros){
 }
 
 # Mostra a série temporal com uma linha horizontal na média zero.
-# Entrada: serie (vetor numérico), titulo (texto), ylab (eixo y), rotulo_serie (legenda).
-# Saída: Objeto ggplot.
+# Entrada: serie é um vetor numérico, titulo é um texto, ylab identifica o eixo y
+# e rotulo_serie identifica a série na legenda.
+# Saída: objeto ggplot.
 plot_serie_temporal <- function(serie,
                                  titulo,
                                  ylab = expression(X[t]),
@@ -106,9 +108,9 @@ plot_serie_temporal <- function(serie,
   return(grafico)
 }
 
-# Mostra a FAC empírica em segmentos, com limites de 95% em +-1,96/sqrt(n).
-# Entrada: fac (vetor com rho(0), ..., rho(max_lag)), n (tamanho da série), titulo (texto).
-# Saída: Objeto ggplot.
+# Mostra a FAC empírica em segmentos, com limites de 95% dados por +-1,96/sqrt(n).
+# Entrada: fac contém rho(0), ..., rho(max_lag), n é o tamanho da série e titulo é um texto.
+# Saída: objeto ggplot.
 plot_fac_empirica <- function(fac,
                               n,
                               titulo){
@@ -166,9 +168,10 @@ plot_fac_empirica <- function(fac,
   return(grafico)
 }
 
-# Compara a FAC empírica em segmentos com a FAC teórica do AR(1) em linha e pontos.
-# Entrada: fac_empirica e fac_teorica (vetores do mesmo tamanho), titulo (texto), n (inteiro).
-# Saída: Objeto ggplot.
+# Compara a FAC empírica em segmentos com a FAC teórica do AR(1), mostrada em linha e pontos.
+# Entrada: fac_empirica e fac_teorica são vetores do mesmo tamanho, titulo é um texto
+# e n é um inteiro.
+# Saída: objeto ggplot.
 plot_fac_comparacao <- function(fac_empirica,
                                 fac_teorica,
                                 titulo,
@@ -241,9 +244,9 @@ plot_fac_comparacao <- function(fac_empirica,
   return(grafico)
 }
 
-# Compara a FAC manual em segmentos com a FAC de acf() do R em pontos.
-# Entrada: fac e fac_r (vetores do mesmo tamanho), titulo (texto).
-# Saída: Objeto ggplot.
+# Compara a FAC manual em segmentos com a FAC de acf() do R, mostrada em pontos.
+# Entrada: fac e fac_r são vetores do mesmo tamanho e titulo é um texto.
+# Saída: objeto ggplot.
 plot_comparacao_acf_r <- function(fac, fac_r, titulo){
 
   dados <- data.frame(
@@ -296,9 +299,10 @@ plot_comparacao_acf_r <- function(fac, fac_r, titulo){
   return(grafico)
 }
 
-# Imprime um título de seção no console.
-# Entrada: titulo (texto).
-# Saída: Nenhuma, apenas imprime.
+# Imprime um título de seção para separar os resultados no console.
+# Entrada: titulo é o texto que será impresso.
+# Saída: nenhuma, apenas imprime.
+# :::
 imprimir_titulo_console <- function(titulo){
   cat("\n# -- ", titulo, " -- #\n\n", sep = "")
 }
