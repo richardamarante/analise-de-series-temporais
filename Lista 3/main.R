@@ -1,8 +1,8 @@
 ############################################################
 # main.R
-# Pipeline: Configuração -> Simulação da Série -> Transformação
-# (Média Móvel) -> Análise Estatística (FAC) -> Visualização e Saída.
-# Rodar com a pasta da lista como diretório de trabalho.
+# Coordena a configuração, simulação, média móvel, FAC e gráficos.
+# Dependências: scripts/config.R, scripts/dados.R, scripts/processamento.R e scripts/visualizacao.R.
+# Executar com a pasta da lista como diretório de trabalho.
 ############################################################
 
 rm(list = ls())
@@ -11,16 +11,16 @@ library(ggplot2)
 library(jsonlite)
 library(patchwork)
 
-source("scripts/01_config.R")
-source("scripts/02_dados.R")
-source("scripts/03_processamento.R")
-source("scripts/04_visualizacao.R")
-
-parametros <- ler_parametros("scripts/parametros.json")
+source("scripts/config.R")
+source("scripts/dados.R")
+source("scripts/processamento.R")
+source("scripts/visualizacao.R")
 
 ############################################################
 # CONFIGURAÇÃO
 ############################################################
+
+parametros <- ler_parametros("parametros.json")
 
 fixar_semente(parametros)
 
@@ -47,6 +47,8 @@ cat("Coeficientes (beta):", beta, "\n")
 ############################################################
 
 Xt <- simular_serie_com_tendencia(beta, X, sigma)
+
+tendencia <- calcular_tendencia(beta, X)
 
 ############################################################
 # TRANSFORMAÇÃO (MÉDIA MÓVEL)
@@ -76,7 +78,7 @@ cat("FAE (autocorrelação empírica) para lags 0 a", max_lag, ":\n")
 
 print(round(fac_Xt, 4))
 
-# comparação com a acf() do R
+# Compara a FAC calculada com a acf() do R.
 fac_R <- as.numeric(acf(Xt, lag.max = max_lag, plot = FALSE)$acf)
 
 cat("Maior diferença absoluta entre a FAC manual e a acf():",
@@ -103,8 +105,9 @@ grafico_media_movel <- plot_serie_media_movel(
   t,
   Xt,
   m_q,
+  tendencia,
   q,
-  "Série Temporal com Média Móvel",
+  "Série Temporal com Média Móvel e Tendência",
   expression(X[t])
 )
 print(grafico_media_movel)

@@ -1,0 +1,14 @@
+{
+  "seed": 123,
+  "n": 90,
+  "sigma": 15,
+  "q": 3,
+  "max_lag": 20,
+  "beta": [2, 0.01, 0.01],
+  "n_eficiencia": 50000,
+  "repeticoes_eficiencia": 10,
+  "salvar_graficos": true,
+  "largura_grafico": 10,
+  "altura_grafico": 6,
+  "dpi_grafico": 300
+}

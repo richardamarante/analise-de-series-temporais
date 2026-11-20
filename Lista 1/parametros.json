@@ -1,0 +1,23 @@
+{
+  "seed": 123,
+  "sigma2": 1,
+  "n": 500,
+  "m": 10,
+  "n_cilindro": 200,
+  "m_cilindro": 1000,
+  "tempos_fix": [40, 100, 160],
+  "limite_inferior": [-3, -2, -6],
+  "limite_superior": [3, 4, -4],
+  "n_intersecao": 200,
+  "m_intersecao": 1000,
+  "tempos_cilindro1": [40, 100],
+  "limite_inferior_cilindro1": [-4, -3],
+  "limite_superior_cilindro1": [4, 3],
+  "tempos_cilindro2": [100, 160],
+  "limite_inferior_cilindro2": [-2, -7],
+  "limite_superior_cilindro2": [5, -1],
+  "salvar_graficos": true,
+  "largura_grafico": 10,
+  "altura_grafico": 6,
+  "dpi_grafico": 300
+}

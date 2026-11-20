@@ -10,12 +10,12 @@ rm(list = ls())
 library(ggplot2)
 library(jsonlite)
 
-source("scripts/01_config.R")
-source("scripts/02_dados.R")
-source("scripts/03_processamento.R")
-source("scripts/04_visualizacao.R")
+source("scripts/config.R")
+source("scripts/dados.R")
+source("scripts/processamento.R")
+source("scripts/visualizacao.R")
 
-parametros <- ler_parametros("scripts/parametros.json")
+parametros <- ler_parametros("parametros.json")
 
 ############################################################
 # CONFIGURAÇÃO
@@ -42,22 +42,24 @@ beta_sazonal <- criar_beta_sazonal(parametros$alpha, parametros$beta_h, K)
 
 imprimir_titulo_console("SIMULAÇÃO DA SÉRIE")
 
+# matrizes de regressores: montadas aqui e passadas prontas ao ajuste e à previsão
 X_tendencia <- criar_matriz_tendencia(t, grau_tendencia)
-X_sazonal <- criar_matriz_fourier(t, s, K)
+X_fourier <- criar_matriz_fourier(t, s, K)
+X_dummies <- criar_matriz_dummies(t, s)
 
 Xt <- simular_serie(beta_tendencia = beta_tendencia,
                     X_tendencia = X_tendencia,
-                    X_sazonal = X_sazonal,
+                    X_sazonal = X_fourier,
                     beta_sazonal = beta_sazonal,
                     sigma = sigma)
 
 # componentes verdadeiros, para comparar com os estimados
 tendencia_real <- multiplicar_matriz_vetor(X_tendencia, beta_tendencia)
-sazonalidade_real <- multiplicar_matriz_vetor(X_sazonal, beta_sazonal)
+sazonalidade_real <- multiplicar_matriz_vetor(X_fourier, beta_sazonal)
 
 cat("Tamanho da série:", n, "\n")
 cat("Colunas da matriz de tendência:", ncol(X_tendencia), "\n")
-cat("Colunas da matriz de Fourier:", ncol(X_sazonal), "\n")
+cat("Colunas da matriz de Fourier:", ncol(X_fourier), "\n")
 cat("Média da série simulada:", round(calcular_media_amostral(Xt), 4), "\n")
 
 ############################################################
@@ -66,19 +68,13 @@ cat("Média da série simulada:", round(calcular_media_amostral(Xt), 4), "\n")
 
 tendencia_media_movel <- calcular_media_movel(Xt, q)
 
-modelo <- ajustar_modelo(t = t,
-                         y = Xt,
-                         grau_tendencia = grau_tendencia,
-                         periodo = s,
-                         K = K,
-                         metodo_sazonal = "fourier")
+modelo <- ajustar_modelo(y = Xt,
+                         X_tendencia = X_tendencia,
+                         X_sazonal = X_fourier)
 
-modelo_dummies <- ajustar_modelo(t = t,
-                                 y = Xt,
-                                 grau_tendencia = grau_tendencia,
-                                 periodo = s,
-                                 K = K,
-                                 metodo_sazonal = "dummies")
+modelo_dummies <- ajustar_modelo(y = Xt,
+                                 X_tendencia = X_tendencia,
+                                 X_sazonal = X_dummies)
 
 imprimir_titulo_console("COEFICIENTES (VERDADEIRO E ESTIMADO)")
 
@@ -109,6 +105,11 @@ cat("RMSE (Fourier):", round(diagnostico_fourier$rmse, 4), "\n")
 cat("RMSE (Dummies):", round(diagnostico_dummies$rmse, 4), "\n")
 cat("R² (Fourier):", round(diagnostico_fourier$r2, 4), "\n")
 cat("R² (Dummies):", round(diagnostico_dummies$r2, 4), "\n")
+
+# sazonalidade de cada mês (1 a s), com média zero no ano, para comparar Fourier e dummies no gráfico
+sazonalidade_mensal_real <- calcular_sazonalidade_mensal(t, sazonalidade_real, s)
+sazonalidade_mensal_fourier <- calcular_sazonalidade_mensal(t, modelo$sazonalidade, s)
+sazonalidade_mensal_dummies <- calcular_sazonalidade_mensal(t, modelo_dummies$sazonalidade, s)
 
 imprimir_titulo_console("TESTES DE HIPÓTESES – FOURIER")
 
@@ -151,14 +152,16 @@ imprimir_titulo_console("PREVISÃO")
 
 t_futuro <- (n + 1):(n + parametros$n_futuro)
 
-previsoes <- prever(modelo, t_futuro)
-previsoes_dummies <- prever(modelo_dummies, t_futuro)
-
+# matrizes nos instantes futuros, com as mesmas colunas do ajuste
 X_tendencia_futuro <- criar_matriz_tendencia(t_futuro, grau_tendencia)
-X_sazonal_futuro <- criar_matriz_fourier(t_futuro, s, K)
+X_fourier_futuro <- criar_matriz_fourier(t_futuro, s, K)
+X_dummies_futuro <- criar_matriz_dummies(t_futuro, s)
+
+previsoes <- prever(modelo, X_tendencia_futuro, X_fourier_futuro)
+previsoes_dummies <- prever(modelo_dummies, X_tendencia_futuro, X_dummies_futuro)
 
 sinal_futuro <- multiplicar_matriz_vetor(X_tendencia_futuro, beta_tendencia) +
-  multiplicar_matriz_vetor(X_sazonal_futuro, beta_sazonal)
+  multiplicar_matriz_vetor(X_fourier_futuro, beta_sazonal)
 
 for(i in 1:length(t_futuro)){
   cat("t =", t_futuro[i],
@@ -190,9 +193,11 @@ grafico <- plot_decomposicao(
   modelo$residuos
 )
 print(grafico)
+# quatro painéis empilhados: o dobro da altura dos outros gráficos
 salvar_grafico(grafico,
                "decomposicao/01_decomposicao_aditiva",
-               parametros)
+               parametros,
+               fator_altura = 2)
 
 grafico <- plot_serie_ajustada(
   t,
@@ -236,6 +241,16 @@ salvar_grafico(grafico,
                "decomposicao/05_serie_media_movel_tendencia",
                parametros)
 
+grafico <- plot_sazonalidade_mensal(
+  sazonalidade_mensal_real,
+  sazonalidade_mensal_fourier,
+  sazonalidade_mensal_dummies
+)
+print(grafico)
+salvar_grafico(grafico,
+               "decomposicao/06_sazonalidade_mensal_fourier_dummies",
+               parametros)
+
 grafico <- plot_residuos(
   t,
   modelo$residuos
@@ -270,6 +285,7 @@ grafico <- plot_previsao(
   Xt,
   t_futuro,
   previsoes,
+  previsoes_dummies,
   sinal_futuro
 )
 print(grafico)

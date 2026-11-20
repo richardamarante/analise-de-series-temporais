@@ -1,8 +1,8 @@
 ############################################################
 # main.R
-# Pipeline: Configuração -> Simulação de Séries -> Cálculo
-# Estatístico -> Análise e Comparação -> Exibição de Resultados.
-# Rodar com a pasta da lista como diretório de trabalho.
+# Coordena configuração, simulação, cálculos estatísticos, comparações e gráficos.
+# Dependências: scripts/config.R, scripts/dados.R, scripts/processamento.R e scripts/visualizacao.R.
+# Execução: usar a pasta da lista como diretório de trabalho.
 ############################################################
 
 rm(list = ls())
@@ -10,16 +10,16 @@ rm(list = ls())
 library(ggplot2)
 library(jsonlite)
 
-source("scripts/01_config.R")
-source("scripts/02_dados.R")
-source("scripts/03_processamento.R")
-source("scripts/04_visualizacao.R")
+source("scripts/config.R")
+source("scripts/dados.R")
+source("scripts/processamento.R")
+source("scripts/visualizacao.R")
 
 ############################################################
 # CONFIGURAÇÃO
 ############################################################
 
-parametros <- ler_parametros("scripts/parametros.json")
+parametros <- ler_parametros("parametros.json")
 
 fixar_semente(parametros)
 
@@ -32,7 +32,7 @@ phi <- parametros$phi
 # SIMULAÇÃO DE SÉRIES
 ############################################################
 
-# ordem dos sorteios: ruído, passeio e AR(1), a mesma do implementacao_procedural.R
+# Simula ruído branco, passeio aleatório e AR(1), na mesma ordem do ex1_implementacao_procedural.R.
 eps <- simular_ruido_branco(n, sigma2)
 X <- simular_passeio_aleatorio(n, sigma2)
 X_ar1 <- simular_ar1(n, phi, sigma2)
@@ -55,12 +55,12 @@ fac_ar1_teorica <- calcular_fac_teorica_ar1(phi, max_lag)
 # ANÁLISE E COMPARAÇÃO
 ############################################################
 
-# FAC manual contra a acf() do R (a posição h+1 guarda o lag h nos dois)
+# Compara a FAC manual com acf() do R. A posição h+1 guarda o lag h nas duas versões.
 acf_eps <- as.numeric(acf(eps, lag.max = max_lag, plot = FALSE)$acf)
 acf_X <- as.numeric(acf(X, lag.max = max_lag, plot = FALSE)$acf)
 acf_ar1 <- as.numeric(acf(X_ar1, lag.max = max_lag, plot = FALSE)$acf)
 
-# distância entre a FAC empírica e a teórica do AR(1), lag a lag
+# Calcula a diferença absoluta entre as FACs empírica e teórica do AR(1), lag a lag.
 diferenca_ar1 <- abs(fac_ar1 - fac_ar1_teorica)
 erro_fac_ar1 <- max(diferenca_ar1)
 
@@ -158,7 +158,7 @@ cat("Média empírica (AR(1)):", round(media_ar1, 4), "\n")
 
 grafico <- plot_serie_temporal(
   X_ar1,
-  "Série Temporal do Processo AR(1)",
+  paste0("Série Temporal do Processo AR(1) com φ = ", phi),
   expression(X[t]),
   "Xₜ"
 )
@@ -203,7 +203,7 @@ cat("Maior diferença para o acf() do R:",
 
 imprimir_titulo_console("FAC DO AR(1): EMPÍRICA, TEÓRICA E DIFERENÇA")
 
-# uma linha por lag: rho_hat(h), phi^h e a diferença em módulo
+# Imprime rho_hat(h), phi^h e a diferença absoluta para cada lag.
 for(h in 0:max_lag){
   cat("lag", h,
       "| empírica:", round(fac_ar1[h+1], 4),
