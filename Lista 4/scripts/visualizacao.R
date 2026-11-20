@@ -628,3 +628,97 @@ plot_histograma <- function(serie, titulo, xlab, sigma2){
 
   return(grafico)
 }
+
+# Mostra a série, os cortes por data e as previsões de Fourier e dummies na validação e no teste.
+# Entrada: t, serie (vetores n), t_validacao e t_teste (instantes de cada trecho),
+# previsoes_fourier e previsoes_dummies (vetores com a validação seguida do teste).
+# Saída: objeto ggplot.
+plot_divisao_temporal <- function(t, serie, t_validacao, t_teste, previsoes_fourier, previsoes_dummies){
+
+  dados <- data.frame(tempo = t, serie = serie)
+
+  tempo_previsao <- c(t_validacao, t_teste)
+
+  # O trecho separa as linhas, para a validação não emendar no teste.
+  trecho <- c(rep("Validação", length(t_validacao)), rep("Teste", length(t_teste)))
+
+  dados_previsao <- data.frame(
+    tempo = c(tempo_previsao, tempo_previsao),
+    previsao = c(previsoes_fourier, previsoes_dummies),
+    metodo = c(rep("Previsão (Fourier)", length(tempo_previsao)), rep("Previsão (Dummies)", length(tempo_previsao))),
+    grupo = c(paste("Fourier", trecho), paste("Dummies", trecho))
+  )
+
+  cortes <- data.frame(x = c(t_validacao[1], t_teste[1]) - 0.5)
+
+  rotulos <- data.frame(
+    x = c((1 + t_validacao[1]) / 2, (t_validacao[1] + t_teste[1]) / 2, (t_teste[1] + max(t)) / 2),
+    y = max(serie) + 0.06 * (max(serie) - min(serie)),
+    texto = c("Treino", "Validação", "Teste")
+  )
+
+  grafico <- ggplot() +
+    geom_line(data = dados,
+              aes(x = tempo, y = serie, color = "Série Observada"),
+              linewidth = 0.8) +
+    geom_vline(data = cortes,
+               aes(xintercept = x, color = "Cortes por Data"),
+               linetype = "dotted",
+               linewidth = 0.7) +
+    geom_line(data = dados_previsao,
+              aes(x = tempo, y = previsao, color = metodo, group = grupo),
+              linewidth = 1.1) +
+    geom_text(data = rotulos,
+              aes(x = x, y = y, label = texto),
+              color = cor_principal,
+              size = 4)
+
+  cores <- c("Série Observada" = cor_principal,
+             "Previsão (Fourier)" = cor_acf,
+             "Previsão (Dummies)" = cor_media_movel,
+             "Cortes por Data" = cor_trajetorias)
+
+  grafico <- grafico +
+    scale_color_manual(values = cores, breaks = names(cores)) +
+    labs(title = "Previsões na Validação e no Teste",
+         x = "Tempo (t)",
+         y = expression(X[t])) +
+    tema_graficos()
+
+  grafico <- ajustar_eixos(grafico)
+
+  return(grafico)
+}
+
+# Compara o RMSE de Fourier e de dummies no treino, na validação e no teste.
+# Entrada: rmse_fourier e rmse_dummies (vetores com treino, validação e teste, nessa ordem).
+# Saída: objeto ggplot de barras.
+plot_metricas_divisao <- function(rmse_fourier, rmse_dummies){
+
+  conjuntos <- c("Treino", "Validação", "Teste")
+
+  dados <- data.frame(
+    metodo = c(rep("Fourier", 3), rep("Dummies", 3)),
+    conjunto = factor(c(conjuntos, conjuntos), levels = conjuntos),
+    rmse = c(rmse_fourier, rmse_dummies)
+  )
+
+  grafico <- ggplot(dados, aes(x = metodo, y = rmse, fill = conjunto)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    geom_text(aes(label = format(round(rmse, 2), nsmall = 2)),
+              position = position_dodge(width = 0.8),
+              vjust = -0.4,
+              size = 3.8,
+              color = cor_principal) +
+    scale_fill_manual(values = c("Treino" = cor_histograma,
+                                 "Validação" = cor_acf,
+                                 "Teste" = cor_media_movel)) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
+    labs(title = "RMSE no Treino, na Validação e no Teste",
+         x = "Sazonalidade",
+         y = "RMSE",
+         fill = NULL) +
+    tema_graficos()
+
+  return(grafico)
+}

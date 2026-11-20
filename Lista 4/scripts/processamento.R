@@ -289,6 +289,39 @@ prever <- function(modelo, X_tendencia_futuro, X_sazonal_futuro){
   return(previsoes)
 }
 
+# Mede o erro de previsão: RMSE, MAE e R² contra a média do treino.
+# Entrada: y e y_hat (vetores de mesmo tamanho), media_treino (média de y no conjunto de ajuste).
+# Saída: lista com rmse, mae e r2.
+# Pré-condição: y e y_hat sem NA.
+avaliar_previsao <- function(y, y_hat, media_treino){
+
+  n <- length(y)
+
+  sse <- 0
+  soma_absoluta <- 0
+  sst <- 0
+
+  for(i in 1:n){
+
+    erro <- y[i] - y_hat[i]
+
+    sse <- sse + erro^2
+
+    soma_absoluta <- soma_absoluta + abs(erro)
+
+    sst <- sst + (y[i] - media_treino)^2
+  }
+
+  rmse <- sqrt(sse / n)
+
+  mae <- soma_absoluta / n
+
+  # R² igual a 0 empata com prever a média do treino; negativo é pior que ela.
+  r2 <- 1 - sse / sst
+
+  return(list(rmse = rmse, mae = mae, r2 = r2))
+}
+
 # Calcula o efeito médio de cada mês e centraliza para média zero.
 # Entrada: t (vetor de inteiros), sazonalidade (vetor n), periodo (inteiro >= 2).
 # Saída: vetor de tamanho periodo, com um efeito para cada mês.

@@ -178,6 +178,72 @@ rmse_previsao_dummies <- diagnostico(y = sinal_futuro,
 cat("RMSE da previsão (Fourier):", round(rmse_previsao_fourier, 4), "\n")
 cat("RMSE da previsão (Dummies):", round(rmse_previsao_dummies, 4), "\n")
 
+# Divisão por data para a validação fora da amostra: 60% treino, 20% validação e 20% teste.
+imprimir_titulo_console("TREINO, VALIDAÇÃO E TESTE")
+
+n_treino <- round(parametros$proporcao_treino * n)
+n_validacao <- round(parametros$proporcao_validacao * n)
+
+t_treino <- 1:n_treino
+t_validacao <- (n_treino + 1):(n_treino + n_validacao)
+t_ajuste_final <- 1:(n_treino + n_validacao)
+t_teste <- (n_treino + n_validacao + 1):n
+
+cat("Treino: t = 1 a", n_treino, "\n")
+cat("Validação: t =", t_validacao[1], "a", t_validacao[n_validacao], "\n")
+cat("Teste: t =", t_teste[1], "a", n, "\n")
+
+media_treino <- calcular_media_amostral(Xt[t_treino])
+media_ajuste_final <- calcular_media_amostral(Xt[t_ajuste_final])
+
+# Matrizes de tendência de cada trecho.
+X_tendencia_treino <- criar_matriz_tendencia(t_treino, grau_tendencia)
+X_tendencia_validacao <- criar_matriz_tendencia(t_validacao, grau_tendencia)
+X_tendencia_ajuste_final <- criar_matriz_tendencia(t_ajuste_final, grau_tendencia)
+X_tendencia_teste <- criar_matriz_tendencia(t_teste, grau_tendencia)
+
+# Fourier: ajusta no treino e prevê a validação; depois reajusta com treino e validação e prevê o teste.
+modelo_treino_fourier <- ajustar_modelo(Xt[t_treino], X_tendencia_treino, criar_matriz_fourier(t_treino, s, K))
+previsao_validacao_fourier <- prever(modelo_treino_fourier, X_tendencia_validacao, criar_matriz_fourier(t_validacao, s, K))
+
+modelo_final_fourier <- ajustar_modelo(Xt[t_ajuste_final], X_tendencia_ajuste_final, criar_matriz_fourier(t_ajuste_final, s, K))
+previsao_teste_fourier <- prever(modelo_final_fourier, X_tendencia_teste, criar_matriz_fourier(t_teste, s, K))
+
+# Dummies: os mesmos passos.
+modelo_treino_dummies <- ajustar_modelo(Xt[t_treino], X_tendencia_treino, criar_matriz_dummies(t_treino, s))
+previsao_validacao_dummies <- prever(modelo_treino_dummies, X_tendencia_validacao, criar_matriz_dummies(t_validacao, s))
+
+modelo_final_dummies <- ajustar_modelo(Xt[t_ajuste_final], X_tendencia_ajuste_final, criar_matriz_dummies(t_ajuste_final, s))
+previsao_teste_dummies <- prever(modelo_final_dummies, X_tendencia_teste, criar_matriz_dummies(t_teste, s))
+
+# Erros de cada trecho. No teste, o R² usa a média dos dados do ajuste final.
+erro_treino_fourier <- avaliar_previsao(Xt[t_treino], modelo_treino_fourier$y_hat, media_treino)
+erro_validacao_fourier <- avaliar_previsao(Xt[t_validacao], previsao_validacao_fourier, media_treino)
+erro_teste_fourier <- avaliar_previsao(Xt[t_teste], previsao_teste_fourier, media_ajuste_final)
+
+erro_treino_dummies <- avaliar_previsao(Xt[t_treino], modelo_treino_dummies$y_hat, media_treino)
+erro_validacao_dummies <- avaliar_previsao(Xt[t_validacao], previsao_validacao_dummies, media_treino)
+erro_teste_dummies <- avaliar_previsao(Xt[t_teste], previsao_teste_dummies, media_ajuste_final)
+
+cat("Fourier no treino - RMSE:", round(erro_treino_fourier$rmse, 4), "- MAE:", round(erro_treino_fourier$mae, 4), "- R²:", round(erro_treino_fourier$r2, 4), "\n")
+cat("Fourier na validação - RMSE:", round(erro_validacao_fourier$rmse, 4), "- MAE:", round(erro_validacao_fourier$mae, 4), "- R²:", round(erro_validacao_fourier$r2, 4), "\n")
+cat("Fourier no teste - RMSE:", round(erro_teste_fourier$rmse, 4), "- MAE:", round(erro_teste_fourier$mae, 4), "- R²:", round(erro_teste_fourier$r2, 4), "\n")
+cat("Dummies no treino - RMSE:", round(erro_treino_dummies$rmse, 4), "- MAE:", round(erro_treino_dummies$mae, 4), "- R²:", round(erro_treino_dummies$r2, 4), "\n")
+cat("Dummies na validação - RMSE:", round(erro_validacao_dummies$rmse, 4), "- MAE:", round(erro_validacao_dummies$mae, 4), "- R²:", round(erro_validacao_dummies$r2, 4), "\n")
+cat("Dummies no teste - RMSE:", round(erro_teste_dummies$rmse, 4), "- MAE:", round(erro_teste_dummies$mae, 4), "- R²:", round(erro_teste_dummies$r2, 4), "\n")
+
+# Escolhe o método com menor RMSE na validação.
+if(erro_validacao_fourier$rmse <= erro_validacao_dummies$rmse){
+  metodo_escolhido <- "Fourier"
+  rmse_teste_escolhido <- erro_teste_fourier$rmse
+} else {
+  metodo_escolhido <- "Dummies"
+  rmse_teste_escolhido <- erro_teste_dummies$rmse
+}
+
+cat("Método escolhido pela validação:", metodo_escolhido, "\n")
+cat("RMSE no teste do método escolhido:", round(rmse_teste_escolhido, 4), "\n")
+
 ############################################################
 # VISUALIZAÇÃO
 ############################################################
@@ -290,4 +356,22 @@ grafico <- plot_previsao(
 print(grafico)
 salvar_grafico(grafico,
                "previsao/01_previsao_fora_amostra",
+               parametros)
+
+grafico <- plot_divisao_temporal(t,
+                                 Xt,
+                                 t_validacao,
+                                 t_teste,
+                                 c(previsao_validacao_fourier, previsao_teste_fourier),
+                                 c(previsao_validacao_dummies, previsao_teste_dummies))
+print(grafico)
+salvar_grafico(grafico,
+               "previsao/02_previsao_validacao_teste",
+               parametros)
+
+grafico <- plot_metricas_divisao(c(erro_treino_fourier$rmse, erro_validacao_fourier$rmse, erro_teste_fourier$rmse),
+                                 c(erro_treino_dummies$rmse, erro_validacao_dummies$rmse, erro_teste_dummies$rmse))
+print(grafico)
+salvar_grafico(grafico,
+               "previsao/03_rmse_treino_validacao_teste",
                parametros)
