@@ -1,50 +1,38 @@
 # Modelagem do sistema (Exercício 3)
 
-O sistema é procedural. O `main.R` coordena a execução, e os módulos em `scripts/` separam configuração, simulação, processamento e visualização.
+O sistema é procedural e tem sua execução coordenada por `main.R`, que carrega os módulos responsáveis pela configuração, simulação, processamento e visualização. A separação permite organizar as etapas sem alterar o fluxo sequencial do programa.
 
 ## 3.2 (a) Arquitetura dos módulos
 
 ```text
 main.R
-├── scripts/config.R
-│   ├── ler_parametros() ← parametros.json
-│   └── fixar_semente()
+├── scripts/config.R ← parametros.json
 ├── scripts/dados.R
-│   ├── simular_ruido_branco()
-│   ├── acumular_passeio_aleatorio()
-│   ├── simular_passeio_aleatorio()
-│   └── simular_ar1()
+│   ├── Ruído branco
+│   ├── Passeio aleatório
+│   └── AR(1)
 ├── scripts/processamento.R
-│   ├── calcular_media_empirica()
-│   ├── calcular_autocovariancia_empirica()
-│   ├── calcular_autocovariancias()
-│   ├── calcular_fac_empirica()
-│   └── calcular_fac_teorica_ar1()
+│   ├── Média e autocovariâncias
+│   └── FACs empírica e teórica
 └── scripts/visualizacao.R
-    └── gráficos, print() e salvar_grafico()
+    └── Gráficos e exibição
 
 ex1_implementacao_procedural.R (execução independente)
-ex4_eficiencia.R (carrega config.R, dados.R e processamento.R)
+ex4_eficiencia.R (usa configuração, dados e processamento)
 ```
 
-O `main.R` carrega os quatro módulos com `source()`. Os módulos não carregam outros arquivos. O `parametros.json` contém `seed`, `n`, `max_lag`, `sigma2`, `phi`, `n_eficiencia`, `repeticoes_eficiencia`, `n_grafico_eficiencia` e opções de salvamento.
+O `main.R` carrega os quatro módulos com `source()`, sem que eles precisem carregar outros arquivos. Os parâmetros de entrada ficam em `parametros.json`, incluindo os valores das simulações e as opções da análise de eficiência.
 
 ## 3.2 (b) Dependências e fluxo de dados
 
-1. `scripts/config.R` lê `parametros.json` com `ler_parametros()` e fixa a semente com `fixar_semente()`.
-2. `scripts/dados.R` gera `eps`, `X` e `X_ar1`, com `n = 200`, `sigma2 = 1` e `phi = 0.7`.
-3. `scripts/processamento.R` calcula as médias, autocovariâncias e FACs para as defasagens de 0 a `max_lag = 20`.
-4. `main.R` compara as FACs manuais com `acf()` e a FAC empírica do AR(1) com a teórica, imprimindo os resultados.
-5. `scripts/visualizacao.R` exibe e salva os gráficos em `graficos/ruido_branco/`, `graficos/passeio_aleatorio/` e `graficos/ar1/`.
+A execução começa com a leitura dos parâmetros e a definição da semente, passando para a simulação do ruído branco, do passeio aleatório e do AR(1), que gera os vetores `eps`, `X` e `X_ar1` com `n = 200`, `sigma2 = 1` e `phi = 0.7`. Em seguida, o processamento calcula as médias, autocovariâncias e FACs para as defasagens de 0 a `max_lag = 20`, que são comparadas no `main.R` com `acf()` e, no caso do AR(1), com a FAC teórica. Os resultados são impressos no console, e os gráficos são exibidos e salvos nas respectivas pastas dentro de `graficos/`.
 
 ## 3.2 (c) Sequência de chamadas do AR(1)
 
-1. `main.R` carrega os módulos, chama `ler_parametros("parametros.json")` e `fixar_semente(parametros)`.
-2. `simular_ar1(n, phi, sigma2)` chama `simular_ruido_branco()`, define `X[1] = eps[1]` e calcula `X[t] = phi * X[t - 1] + eps[t]` para `t = 2, ..., n`.
-3. `calcular_media_empirica(X_ar1)` retorna a média; `calcular_fac_empirica(X_ar1, max_lag)` usa `calcular_autocovariancias()` e divide cada autocovariância por γ(0).
-4. `calcular_fac_teorica_ar1(phi, max_lag)` calcula ρ(h) = φ^h. `main.R` compara as FACs e chama `acf(X_ar1, lag.max = max_lag, plot = FALSE)`.
-5. As funções de visualização geram quatro gráficos: série temporal, FAC empírica, comparação com a FAC teórica e comparação com `acf()`; `print()` e `salvar_grafico()` exibem e salvam os PNGs em `graficos/ar1/`.
+Depois de carregar os módulos e configurar os parâmetros, o `main.R` chama `simular_ar1()`, que gera os choques com `simular_ruido_branco()` e define `X[1] = eps[1]`. Os valores seguintes são calculados pela recorrência `X[t] = phi * X[t - 1] + eps[t]`, para `t = 2, ..., n`, antes de passar a série para o cálculo da média e da FAC empírica.
+
+A FAC empírica é obtida pelas autocovariâncias divididas por γ(0), enquanto a teórica usa ρ(h) = φ^h. O `main.R` compara os resultados com a teoria e com `acf(X_ar1, lag.max = max_lag, plot = FALSE)`, depois chama as funções de visualização para exibir e salvar quatro gráficos do AR(1), incluindo a série temporal e as comparações entre as FACs.
 
 ## 3.3 Por que é procedural
 
-O programa segue etapas sequenciais controladas por `main.R`. As funções recebem argumentos e retornam valores ou vetores, sem classes ou herança. As séries têm tamanho `n`, e os vetores de autocovariâncias e FACs têm `max_lag + 1` posições, com a defasagem `h` na posição `h + 1`. Os loops `for` calculam as recorrências e autocovariâncias, e as condições `if` controlam casos específicos. Os módulos são separados por responsabilidade, mantendo a passagem de dados explícita.
+O programa segue etapas sequenciais controladas por `main.R`, com funções que recebem argumentos e retornam valores ou vetores, sem utilizar classes ou herança. As séries têm tamanho `n`, enquanto os vetores de autocovariâncias e FACs têm `max_lag + 1` posições, de modo que a defasagem `h` ocupa a posição `h + 1`. Os loops `for` são usados nas recorrências e no cálculo das autocovariâncias, e as condições `if` tratam casos específicos, mantendo a passagem de dados explícita entre os módulos.

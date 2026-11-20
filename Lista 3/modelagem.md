@@ -1,6 +1,6 @@
 # Modelagem do sistema (Exercício 3)
 
-O programa segue o paradigma procedural. O `main.R` carrega os módulos e executa as etapas em sequência.
+O programa segue o paradigma procedural, com as funções divididas em módulos conforme a etapa do processamento. O `main.R` carrega esses módulos e controla a execução.
 
 ## 3.2 (a) Arquitetura modular
 
@@ -17,26 +17,22 @@ main.R
 |   |-- Gráficos e salvamento
 ```
 
-O `main.R` faz `source()` dos quatro módulos, que não carregam uns aos outros. O `ex4_eficiencia.R` carrega apenas `config.R`, `dados.R` e `processamento.R`.
+O `main.R` carrega os quatro módulos com `source()`, sem que eles precisem carregar uns aos outros. O `ex4_eficiencia.R` utiliza apenas os módulos de configuração, dados e processamento.
 
 ## 3.2 (b) Fluxo de dados
 
-1. `ler_parametros()` lê `parametros.json`; `fixar_semente()`, `criar_tempo()` e `criar_matriz_regressao()` preparam os dados. A matriz X contém 1, t e t².
-2. `simular_serie_com_tendencia()` usa `calcular_tendencia(beta, X)` e `simular_ruido_branco()` para gerar a série Xt e a tendência verdadeira.
-3. `calcular_media_movel()` produz a média móvel centrada. `calcular_media_amostral()`, `calcular_autocovariancia_empirica()` e `calcular_fac_empirica()` calculam as estatísticas de Xt, com autocovariância dividida por n.
-4. O `main.R` compara a FAC com `acf()`. `visualizacao.R` recebe os resultados e `salvar_grafico()` grava os PNGs conforme os parâmetros.
+Os parâmetros são lidos de `parametros.json` e utilizados para definir a semente, o vetor de tempo e a matriz X, formada pelas colunas 1, t e t². Com a matriz e os coeficientes, o programa calcula a tendência verdadeira e acrescenta o ruído branco para obter a série Xt.
+
+A série é utilizada no cálculo da média móvel centrada, da média amostral, das autocovariâncias com divisor n e da FAC empírica. Depois da comparação com `acf()`, os resultados seguem para o módulo de visualização, que constrói os gráficos e os salva conforme as configurações.
 
 ## 3.2 (c) Sequência procedural de chamadas
 
-1. O `main.R` limpa o ambiente, carrega ggplot2, jsonlite e patchwork e faz `source()` dos quatro módulos.
-2. Executa `ler_parametros()`, `fixar_semente()`, `criar_tempo()` e `criar_matriz_regressao()`.
-3. Chama `simular_serie_com_tendencia()`, que utiliza `calcular_tendencia()` e `simular_ruido_branco()`, e depois `calcular_media_movel()`.
-4. Chama `calcular_media_amostral()`, `calcular_autocovariancia_empirica()` e `calcular_fac_empirica()`, que utiliza `calcular_autocovariancias()`. Compara os resultados com `acf()`, `max(abs(fac_Xt - fac_R))` e `all.equal()`.
-5. Gera gráficos com `plot_serie_temporal()`, `plot_serie_media_movel()`, `plot_fac_empirica()`, `plot_comparacao_acf_r()` e `plot_grafico_integrado()`, exibindo e salvando com `salvar_grafico()`.
+O `main.R` começa limpando o ambiente, carregando ggplot2, jsonlite e patchwork e fazendo `source()` dos quatro módulos. Em seguida, lê os parâmetros, fixa a semente e prepara o tempo e a matriz de regressão para simular a série e calcular a média móvel.
+
+Com os dados simulados, chama as funções de média amostral, autocovariância e FAC, comparando esta última com `acf()` por meio da maior diferença absoluta e de `all.equal()`. Por fim, chama as funções de visualização para exibir e salvar os cinco gráficos.
 
 ## 3.3 Por que é procedural
 
-1. O `main.R` controla a ordem das etapas e utiliza os resultados retornados pelas funções.
-2. Os dados são guardados em variáveis, vetores, matrizes e uma lista de parâmetros. As funções recebem argumentos e retornam resultados.
-3. A implementação usa loops `for` e condições `if`, sem classes próprias ou métodos orientados a objetos. `fixar_semente()` configura o gerador aleatório.
-4. Cada módulo reúne funções de uma etapa, separando configuração, simulação, processamento e visualização.
+A implementação é procedural porque o `main.R` determina a ordem das operações e utiliza os resultados retornados pelas funções, que recebem os dados por argumentos. O programa trabalha com variáveis, vetores, matrizes e uma lista de parâmetros, utilizando loops `for` e condições `if`, sem definir classes próprias ou métodos orientados a objetos.
+
+A divisão em módulos separa configuração, simulação, processamento e visualização, mantendo cada etapa organizada sem alterar o fluxo sequencial do programa.

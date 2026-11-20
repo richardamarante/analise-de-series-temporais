@@ -2,9 +2,9 @@
 
 ## Objetivo
 
-Simular uma série com tendência quadrática e sazonalidade, estimar os coeficientes por OLS com equações normais, analisar os resíduos e prever 12 períodos. A sazonalidade é ajustada por Fourier e por dummies, com gráficos feitos em ggplot2.
+Simular uma série temporal com tendência quadrática e sazonalidade, estimar os coeficientes por mínimos quadrados ordinários (OLS) com as equações normais, analisar os resíduos e prever 12 períodos. A sazonalidade é representada por Fourier e por dummies mensais, com os resultados apresentados no console e em gráficos feitos com ggplot2.
 
-Modelo: Xₜ = β₀ + β₁t + β₂t² + Σₖ [αₖ·cos(2πkt/s) + bₖ·sen(2πkt/s)] + εₜ, com εₜ ~ N(0, σ²) e k = 1, …, K.
+O modelo é Xₜ = β₀ + β₁t + β₂t² + Σₖ [αₖ·cos(2πkt/s) + bₖ·sen(2πkt/s)] + εₜ, com εₜ ~ N(0, σ²) e k = 1, …, K.
 
 ## Arquivos
 
@@ -12,20 +12,20 @@ Modelo: Xₜ = β₀ + β₁t + β₂t² + Σₖ [αₖ·cos(2πkt/s) + bₖ·se
 |---|---|---|
 | `ex1_implementacao_procedural.R` | 1 | simulação, OLS, previsão e gráficos em R base |
 | `parametros.json` | 2 | parâmetros da simulação, dos gráficos e da eficiência |
-| `scripts/config.R` | 2 | `ler_parametros()`, semente e vetores de tempo e coeficientes |
-| `scripts/dados.R` | 2 | matrizes de tendência, Fourier e dummies; simulação |
+| `scripts/config.R` | 2 | leitura dos parâmetros e configuração da simulação |
+| `scripts/dados.R` | 2 | matrizes de tendência, Fourier e dummies, além da simulação |
 | `scripts/processamento.R` | 2 | média móvel, OLS, diagnósticos, avaliação e previsão |
-| `scripts/visualizacao.R` | 2 e 4 | gráficos, tema e exportação por `salvar_grafico()` |
+| `scripts/visualizacao.R` | 2 e 4 | gráficos com ggplot2 e exportação |
 | `main.R` | 3 | execução das etapas e geração de 12 gráficos |
-| `ex4_eficiencia.R` | 4 | validação com `lm()`, tempos e gráfico de eficiência |
+| `ex4_eficiencia.R` | 4 | validação com `lm()`, comparação de tempos e gráfico de eficiência |
 | `README.md` | | execução e resultados |
-| `modelagem.md` | 3 | arquitetura, fluxo, chamadas e paradigma procedural |
+| `modelagem.md` | 3 | arquitetura, fluxo de dados, chamadas e paradigma procedural |
 
-A modelagem do Exercício 3 está em [modelagem.md](modelagem.md).
+A arquitetura e o funcionamento do Exercício 3 estão descritos em [modelagem.md](modelagem.md).
 
 ## Como executar
 
-No RStudio, usar a pasta da lista como diretório de trabalho, instalar `ggplot2` e `jsonlite` se necessário e executar:
+No RStudio, com a pasta da lista como diretório de trabalho, instalar os pacotes ggplot2 e jsonlite se necessário e executar os scripts.
 
 ```r
 install.packages(c("ggplot2", "jsonlite"))
@@ -33,25 +33,15 @@ source("main.R")
 source("ex4_eficiencia.R")
 ```
 
-O Exercício 1 roda separadamente com `source("ex1_implementacao_procedural.R")`. O `main.R` mostra os resultados e salva 12 PNGs; `ex4_eficiencia.R` salva mais um.
+O Exercício 1 pode ser executado separadamente com `source("ex1_implementacao_procedural.R")`. O `main.R` apresenta os resultados no console e salva 12 gráficos, enquanto o script de eficiência gera mais um. Os parâmetros ficam em `parametros.json`, que define a semente 42, dez anos de observações mensais, desvio do ruído igual a 5 e dois harmônicos de Fourier, além das configurações de previsão, divisão temporal e eficiência.
 
-Em `parametros.json`: `seed = 42`, `n_anos = 10`, `s = 12`, `sigma = 5`, `grau_tendencia = 2`, `beta_tendencia = (2, 0.05, 0.001)`, `alpha = (2, 1)`, `beta_h = (-1, 0.5)`, `K = 2`, `q = 5`, `n_futuro = 12`, `n_eficiencia = 200000` e `repeticoes_eficiencia = 10`. São 120 observações, variância do ruído 25 e média móvel centrada de 11 pontos. O arquivo também define `n_grafico_eficiencia`, `proporcao_treino` e `proporcao_validacao`.
+## Fourier x dummies
+
+No Exercício 1.3, a sazonalidade de Fourier é representada por 2K colunas de senos e cossenos, com K < s/2, o que permite ajustar um padrão periódico suave com poucos parâmetros. As dummies usam s − 1 indicadoras e deixam cada mês com seu próprio efeito, retirando o mês de referência para evitar dependência linear com o intercepto. Com s = 12 e K = 2, os modelos têm três coeficientes de tendência e, respectivamente, quatro e 11 coeficientes sazonais, totalizando 7 parâmetros para Fourier e 14 para dummies.
 
 ## Validação dos resultados
 
-A média da série simulada foi 10.0334. O ajuste de Fourier usa três colunas de tendência e quatro sazonais; dummies usa três de tendência e 11 indicadoras (mês 1 como referência). OLS estima 7 e 14 parâmetros, respectivamente. `ajustar_ols()` resolve `solve(XtX, Xty)`, com produtos calculados por `calcular_XtX()` e `calcular_Xty()`.
-
-| Coeficiente de Fourier | Verdadeiro | Estimado |
-| --- | ---: | ---: |
-| Intercepto | 2 | 2.8646 |
-| Tendência linear | 0.05 | 0.0236 |
-| Tendência quadrática | 0.001 | 0.0012 |
-| Cosseno 1 | 2 | 1.3523 |
-| Seno 1 | -1 | -1.6327 |
-| Cosseno 2 | 1 | 0.7060 |
-| Seno 2 | 0.5 | 0.0716 |
-
-A FAC usa bandas de ±1.96/√n.
+Com a semente 42, foram simuladas 120 observações, com média 10.0334 e variância do ruído igual a 25. A média móvel centrada utiliza 11 pontos, enquanto o OLS resolve as equações normais por `solve(XtX, Xty)`, com os produtos matriciais calculados por loops. Os coeficientes estimados de Fourier, na ordem intercepto, tendência linear, tendência quadrática, cosseno 1, seno 1, cosseno 2 e seno 2, foram 2.8646, 0.0236, 0.0012, 1.3523, -1.6327, 0.7060 e 0.0716, diante dos valores verdadeiros 2, 0.05, 0.001, 2, -1, 1 e 0.5.
 
 | Medida | Fourier | Dummies |
 |---|---:|---:|
@@ -61,13 +51,13 @@ A FAC usa bandas de ±1.96/√n.
 | R² | 0.5979 | 0.6247 |
 | RMSE da previsão | 0.8775 | 1.5812 |
 
-As dummies ajustaram melhor a amostra, com mais parâmetros; Fourier previu melhor o sinal verdadeiro sem ruído, usado para gerar a série. Para t = 121, as previsões foram 23.7829 (Fourier) e 24.3790 (dummies), contra 24.8561 verdadeiro. Para t = 132, foram 28.6178 e 30.6464, contra 29.0240. O horizonte foi t = 121 a 132.
+As dummies tiveram melhor ajuste dentro da amostra, com R² de 0.6247 contra 0.5979, o que também reflete o maior número de parâmetros. Fourier apresentou menor RMSE na previsão do sinal verdadeiro sem ruído, passando de 0.8775 contra 1.5812 das dummies no horizonte de t = 121 a 132. No primeiro período, as previsões foram 23.7829 e 24.3790, diante do valor verdadeiro 24.8561, enquanto no último foram 28.6178 e 30.6464, diante de 29.0240.
 
-Os coeficientes manuais e de `lm()` tiveram maior diferença arredondada a quatro casas igual a 0. `all.equal()` retornou `TRUE` para coeficientes e valores ajustados.
+A FAC dos resíduos foi analisada com bandas de ±1.96/√n. Os coeficientes calculados manualmente também foram comparados com `lm()`, com maior diferença arredondada a quatro casas igual a zero, e `all.equal()` retornou `TRUE` tanto para os coeficientes quanto para os valores ajustados.
 
 ## Treino, validação e teste
 
-A série foi dividida por data, sem embaralhamento, em treino (60%, t = 1 a 72), validação (20%, t = 73 a 96) e teste (20%, t = 97 a 120). Fourier e dummies foram ajustados no treino e avaliados na validação, que definiu o método com menor RMSE. Depois, os dois modelos foram reajustados com treino e validação para prever o teste, usado apenas após a escolha. A função `avaliar_previsao()` calcula RMSE, MAE e R² com loops, usando a média dos dados de ajuste como referência para o R².
+A divisão foi feita por data, sem embaralhamento, com 60% das observações para treino, de t = 1 a 72, 20% para validação, de t = 73 a 96, e 20% para teste, de t = 97 a 120. Os dois métodos foram ajustados no treino e comparados pelo RMSE da validação, que definiu a escolha antes de qualquer avaliação no teste. Depois, ambos foram reajustados com treino e validação para prever o conjunto de teste, calculando RMSE, MAE e R², com a média dos dados de ajuste como referência para o R².
 
 | Conjunto | Método | RMSE | MAE | R² |
 |---|---|---:|---:|---:|
@@ -78,11 +68,11 @@ A série foi dividida por data, sem embaralhamento, em treino (60%, t = 1 a 72),
 | Teste | Fourier | 6.3061 | 5.4237 | 0.7407 |
 | Teste | Dummies | 6.3688 | 5.4176 | 0.7355 |
 
-Dummies teve menor RMSE no treino, mas Fourier foi escolhido pelo menor RMSE na validação (7.5578 contra 7.6130) e também apresentou menor RMSE no teste (6.3061 contra 6.3688). Os gráficos `02_previsao_validacao_teste.png` e `03_rmse_treino_validacao_teste.png`, em `graficos/previsao/`, mostram os cortes temporais com as previsões e os RMSEs por método e conjunto.
+Embora as dummies tenham apresentado menor RMSE no treino, Fourier foi escolhido pelo resultado da validação, com 7.5578 contra 7.6130, e também obteve menor RMSE no teste, com 6.3061 contra 6.3688. Os gráficos em `graficos/previsao/` mostram as divisões temporais, as previsões de cada método e a comparação dos RMSEs nos três conjuntos.
 
-## Análise de eficiência (Exercício 4.3)
+## Análise de eficiência
 
-`calcular_XtX()` usa três loops, com custo aproximado n·p²; `calcular_Xty()` e `multiplicar_matriz_vetor()` usam dois, com custo n·p. O `ex4_eficiencia.R` compara os loops com `crossprod()`, `t(X) %*% X`, `t(X) %*% y` e `X %*% beta`, mantendo `solve()` no OLS.
+No Exercício 4.3, `calcular_XtX()` utiliza três loops aninhados, com custo aproximado de n·p², enquanto `calcular_Xty()` e a multiplicação de matriz por vetor usam dois loops, com custo n·p. A versão vetorizada substitui os produtos por `crossprod()` ou `%*%`, que executam as operações em código compilado, mantendo `solve()` na estimação dos coeficientes. Foram realizadas dez repetições com uma matriz de 200000 linhas e sete colunas.
 
 | Operação vetorizada | Loops | Vetorizada | Ganho |
 |---|---:|---:|---:|
@@ -92,13 +82,8 @@ Dummies teve menor RMSE no treino, mas Fourier foi escolhido pelo menor RMSE na 
 | `t(X) %*% y` | 1.99 s | 0.17 s | 11.7x |
 | `X %*% beta` | 2.76 s | 0.06 s | 46.0x |
 
-Os tempos são de dez repetições com matriz de 200000 × 7. As cinco comparações de coeficientes entre loops, métodos vetorizados e `lm()` retornaram `TRUE`; as comparações numéricas das operações também retornaram `TRUE`, com maior diferença relativa apresentada como 0. O gráfico usa amostras de 1000, 10000, 50000 e 200000 linhas. Os tempos variam conforme a máquina.
+As cinco comparações dos coeficientes entre loops, operações vetorizadas e `lm()` retornaram `TRUE`, assim como as comparações numéricas das operações, cuja maior diferença relativa apresentada foi zero. Os ganhos variaram de 11.7 a 78.3 vezes e mostram a vantagem da vetorização em matrizes grandes, embora os tempos dependam da máquina utilizada. O gráfico em `graficos/eficiencia/` compara as implementações para 1000, 10000, 50000 e 200000 observações.
 
-## Gráficos e ggplot2 (Exercício 4.2)
+## Gráficos e ggplot2
 
-O ggplot2 padroniza tema e eixos com `tema_graficos()` e `ajustar_eixos()`. `plot_decomposicao()` usa `facet_wrap()` para mostrar série, tendência, sazonalidade e resíduos em quatro painéis; os outros gráficos comparam ajustes, previsões, FAC e tempos. `salvar_grafico()` exporta os 13 PNGs com `ggsave()`, 300 dpi, dimensões 10 × 12 na decomposição e 10 × 6 nos demais.
-
-- `graficos/decomposicao/`: `01_decomposicao_aditiva.png`, `02_serie_observada_ajustada.png`, `03_tendencia_estimada_real.png`, `04_sazonalidade_estimada_real.png`, `05_serie_media_movel_tendencia.png`, `06_sazonalidade_mensal_fourier_dummies.png`.
-- `graficos/previsao/`: `01_previsao_fora_amostra.png`, `02_previsao_validacao_teste.png`, `03_rmse_treino_validacao_teste.png`.
-- `graficos/residuos/`: `01_serie_temporal_residuos.png`, `02_funcao_autocorrelacao_residuos.png`, `03_histograma_residuos.png`.
-- `graficos/eficiencia/`: `01_tempo_loop_vetorizada.png`.
+O ggplot2 foi utilizado no Exercício 4.2 para manter a mesma apresentação entre os gráficos, facilitar a comparação das séries e organizar a decomposição aditiva em quatro painéis com `facet_wrap()`. Os 13 PNGs foram distribuídos entre `graficos/decomposicao/`, `graficos/previsao/`, `graficos/residuos/` e `graficos/eficiencia/`, mostrando os componentes estimados e verdadeiros, a média móvel, os ajustes, as previsões, os diagnósticos dos resíduos e os tempos de execução.
