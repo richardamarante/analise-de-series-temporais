@@ -4,7 +4,7 @@
 
 Simular uma série com tendência quadrática e sazonalidade, estimar os coeficientes por OLS com equações normais, analisar os resíduos e prever 12 períodos. A sazonalidade é ajustada por Fourier e por dummies, com gráficos feitos em ggplot2.
 
-$$X_t=\beta_0+\beta_1t+\beta_2t^2+\sum_{k=1}^{K}\left[\alpha_k\cos(2\pi kt/s)+b_k\operatorname{sen}(2\pi kt/s)\right]+\varepsilon_t,\quad\varepsilon_t\sim N(0,\sigma^2).$$
+Modelo: Xₜ = β₀ + β₁t + β₂t² + Σₖ [αₖ·cos(2πkt/s) + bₖ·sen(2πkt/s)] + εₜ, com εₜ ~ N(0, σ²) e k = 1, …, K.
 
 ## Arquivos
 
@@ -51,7 +51,7 @@ A média da série simulada foi 10.0334. O ajuste de Fourier usa três colunas d
 | Cosseno 2 | 1 | 0.7060 |
 | Seno 2 | 0.5 | 0.0716 |
 
-A FAC usa bandas de $\pm1.96/\sqrt{n}$.
+A FAC usa bandas de ±1.96/√n.
 
 | Medida | Fourier | Dummies |
 |---|---:|---:|
@@ -61,13 +61,13 @@ A FAC usa bandas de $\pm1.96/\sqrt{n}$.
 | R² | 0.5979 | 0.6247 |
 | RMSE da previsão | 0.8775 | 1.5812 |
 
-As dummies ajustaram melhor a amostra, com mais parâmetros; Fourier previu melhor o sinal verdadeiro sem ruído, usado para gerar a série. Para $t=121$, as previsões foram 23.7829 (Fourier) e 24.3790 (dummies), contra 24.8561 verdadeiro. Para $t=132$, foram 28.6178 e 30.6464, contra 29.0240. O horizonte foi $t=121:132$.
+As dummies ajustaram melhor a amostra, com mais parâmetros; Fourier previu melhor o sinal verdadeiro sem ruído, usado para gerar a série. Para t = 121, as previsões foram 23.7829 (Fourier) e 24.3790 (dummies), contra 24.8561 verdadeiro. Para t = 132, foram 28.6178 e 30.6464, contra 29.0240. O horizonte foi t = 121 a 132.
 
 Os coeficientes manuais e de `lm()` tiveram maior diferença arredondada a quatro casas igual a 0. `all.equal()` retornou `TRUE` para coeficientes e valores ajustados.
 
 ## Treino, validação e teste
 
-A série foi dividida por data, sem embaralhamento, em treino (60%, $t=1:72$), validação (20%, $t=73:96$) e teste (20%, $t=97:120$). Fourier e dummies foram ajustados no treino e avaliados na validação, que definiu o método com menor RMSE. Depois, os dois modelos foram reajustados com treino e validação para prever o teste, usado apenas após a escolha. A função `avaliar_previsao()` calcula RMSE, MAE e R² com loops, usando a média dos dados de ajuste como referência para o R².
+A série foi dividida por data, sem embaralhamento, em treino (60%, t = 1 a 72), validação (20%, t = 73 a 96) e teste (20%, t = 97 a 120). Fourier e dummies foram ajustados no treino e avaliados na validação, que definiu o método com menor RMSE. Depois, os dois modelos foram reajustados com treino e validação para prever o teste, usado apenas após a escolha. A função `avaliar_previsao()` calcula RMSE, MAE e R² com loops, usando a média dos dados de ajuste como referência para o R².
 
 | Conjunto | Método | RMSE | MAE | R² |
 |---|---|---:|---:|---:|
@@ -82,7 +82,7 @@ Dummies teve menor RMSE no treino, mas Fourier foi escolhido pelo menor RMSE na 
 
 ## Análise de eficiência (Exercício 4.3)
 
-`calcular_XtX()` usa três loops, com custo aproximado $np^2$; `calcular_Xty()` e `multiplicar_matriz_vetor()` usam dois, com custo $np$. O `ex4_eficiencia.R` compara os loops com `crossprod()`, `t(X) %*% X`, `t(X) %*% y` e `X %*% beta`, mantendo `solve()` no OLS.
+`calcular_XtX()` usa três loops, com custo aproximado n·p²; `calcular_Xty()` e `multiplicar_matriz_vetor()` usam dois, com custo n·p. O `ex4_eficiencia.R` compara os loops com `crossprod()`, `t(X) %*% X`, `t(X) %*% y` e `X %*% beta`, mantendo `solve()` no OLS.
 
 | Operação vetorizada | Loops | Vetorizada | Ganho |
 |---|---:|---:|---:|

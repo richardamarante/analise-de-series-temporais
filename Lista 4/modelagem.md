@@ -26,12 +26,12 @@ Lista 4/
 
 ## 3.2 (b) Fluxo de dados e matrizes
 
-1. `ler_parametros()` lê `parametros.json`; a configuração fixa `seed = 42`, cria o tempo e os coeficientes. `dados.R` gera $X_t$ com 120 observações, `X_tendencia` (120 × 3), `X_fourier` (120 × 4) e `X_dummies` (120 × 11).
-2. `main.R` passa `y`, `X_tendencia` e `X_sazonal` para `ajustar_modelo()`. A matriz $X=[X_{tendencia}\mid X_{sazonal}]$ tem 120 × 7 no Fourier e 120 × 14 nas dummies.
-3. `ajustar_ols()` resolve $\hat\beta=(X'X)^{-1}X'y$ com `solve(XtX, Xty)`. `calcular_XtX()` e `calcular_Xty()` obtêm os produtos com loops; `multiplicar_matriz_vetor()` calcula os valores ajustados.
+1. `ler_parametros()` lê `parametros.json`; a configuração fixa `seed = 42`, cria o tempo e os coeficientes. `dados.R` gera Xₜ com 120 observações, `X_tendencia` (120 × 3), `X_fourier` (120 × 4) e `X_dummies` (120 × 11).
+2. `main.R` passa `y`, `X_tendencia` e `X_sazonal` para `ajustar_modelo()`. A matriz `X = [X_tendencia | X_sazonal]` tem 120 × 7 no Fourier e 120 × 14 nas dummies.
+3. `ajustar_ols()` resolve β̂ = (X'X)⁻¹X'y com `solve(XtX, Xty)`. `calcular_XtX()` e `calcular_Xty()` obtêm os produtos com loops; `multiplicar_matriz_vetor()` calcula os valores ajustados.
 4. `ajustar_modelo()` devolve coeficientes, tendência, sazonalidade, ajustados, resíduos e matriz completa. Essas saídas alimentam os diagnósticos.
-5. Na divisão temporal, $t=1:72$ é treino, $t=73:96$ é validação e $t=97:120$ é teste; os modelos são ajustados no treino, avaliados por `avaliar_previsao()` na validação para escolher o menor RMSE e reajustados com treino e validação antes do teste.
-6. `prever(modelo, X_tendencia_futuro, X_sazonal_futuro)` calcula $t=121:132$; as previsões são comparadas por RMSE com o sinal verdadeiro sem ruído. Os resultados seguem para console e gráficos.
+5. Na divisão temporal, t = 1 a 72 é treino, t = 73 a 96 é validação e t = 97 a 120 é teste; os modelos são ajustados no treino, avaliados por `avaliar_previsao()` na validação para escolher o menor RMSE e reajustados com treino e validação antes do teste.
+6. `prever(modelo, X_tendencia_futuro, X_sazonal_futuro)` calcula t = 121 a 132; as previsões são comparadas por RMSE com o sinal verdadeiro sem ruído. Os resultados seguem para console e gráficos.
 
 ## 3.2 (c) Sequência procedural de chamadas
 
